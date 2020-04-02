@@ -21,27 +21,7 @@ import pdb
 import struct
 
 from binary_helpers import merge_binary_strings
-#import chardet
-#from collections import defaultdict
-
-BYTES_PER_PAGE = 4096
-
-#<SET PATHS>
-home = os.path.expanduser("~/")
-#mine_dir = os.path.join(home, 'Documents/ian/cobre_panama')
-mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
-data_dir = os.path.join(mine_dir, 'Model')
-manu_dir = os.path.join(mine_dir, 'ClientBM')
-dm_file = os.path.join(data_dir, 'borcddmod150220.dm')
-dm_npy_file = os.path.join(data_dir, 'book.npy')
-dm_csv = os.path.join(data_dir, 'borcddmod150220.csv')
-manu_csv = os.path.join(manu_dir, 'borcddmod150220.csv')
-#from dc_mwd.mine_data_cache_paths import MineDataCachePaths
-#MINE_DATA_CACHE_PATH = MineDataCachePaths('first_quantum_minerals', 'cobre_panama')
-#</SET PATHS>
-
-
-
+from binary_helpers import read_staggered_string
 
 class DataField(object):
     """
@@ -56,8 +36,42 @@ class DataField(object):
 
 
 
-def field_reader(ff):
+
+def field_reader_ep(ff):
     """
+    4+4+4+12+32
+    """
+    field_name = read_staggered_string(ff, 16, 4, keep_first=True)
+    tipo = read_staggered_string(ff, 8, 4, keep_first=True)
+
+    stored_word = ff.read(8);
+    stored_word = struct.unpack('<d',stored_word)[0]
+    #print('stored_word', stored_word)
+
+    word_number = ff.read(8);#skip
+    word_number = struct.unpack('<d',word_number)[0]
+    #print('word_number ', word_number)
+
+    ff.read(8);#skip
+
+    #<default_value>
+    default_value = ff.read(8);
+    default_value = struct.unpack('<d',default_value)[0]
+    print('default_value', default_value)
+    #</default_value>
+
+    field = DataField()
+    field.name = field_name
+    field.stored_word = stored_word
+    field.default_value = default_value
+    field.type = tipo
+    field.word_number = word_number
+
+    return field
+
+def field_reader_ep_old(ff):
+    """
+    To be deprecated after test new version
     4+4+4+12+32
     """
     #<NAME>

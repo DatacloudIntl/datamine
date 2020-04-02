@@ -32,12 +32,15 @@ home = os.path.expanduser("~/")
 #mine_dir = os.path.join(home, 'Documents/ian/cobre_panama')
 mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
 data_dir = os.path.join(mine_dir, 'Model')
+dm_file = os.path.join(data_dir, 'borcddmod150220.dm')
+
 #<Testwf>
-data_dir = os.path.join(mine_dir, 'Wireframes')
-dm_file = os.path.join(data_dir, 'ANDpt.dm')
+#data_dir = os.path.join(mine_dir, 'Wireframes')
+#dm_file = os.path.join(data_dir, 'ANDpt.dm')
 #</Testwf>
+
+
 manu_dir = os.path.join(mine_dir, 'ClientBM')
-#dm_file = os.path.join(data_dir, 'borcddmod150220.dm')
 dm_npy_file = os.path.join(data_dir, 'book.npy')
 dm_csv = os.path.join(data_dir, 'borcddmod150220.csv')
 manu_csv = os.path.join(manu_dir, 'borcddmod150220.csv')
@@ -121,6 +124,9 @@ def create_df_from_npy_array_book():
     """
     #<READ DM AND DUMP TO NPY>
     header = read_header(dm_file)
+    df = header.cast_fields_to_df()
+    pdb.set_trace()
+
     try:
         book = np.load(dm_npy_file)
         raise(Exception)

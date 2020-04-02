@@ -15,8 +15,40 @@ import numpy as np
 import os
 import pandas as pd
 import pdb
-
+import struct
 #BYTES_PER_PAGE = 4096
+
+def divide_chunks(string, n):
+    # looping till length l
+    for i in range(0, len(string), n):
+        yield string[i:i + n]
+
+def drop_staggered(string_list, keep_first=True):
+    if keep_first:
+        output = string_list[0::2]
+    else:
+        output = string_list[1::2]
+    return output
+
+def read_staggered_string(f, n_read, n_chunk, keep_first=True):
+    """
+    """
+    string = f.read(n_read)
+    string = string.decode('utf-8')
+    chunk_generator = divide_chunks(string, 4)
+    chunked_string = list(chunk_generator)
+    if keep_first:
+        keepers = chunked_string[0::2]
+    else:
+        keepers = chunked_string[1::2]
+    merged_string = ''.join(keepers)
+    return merged_string
+def read_int_from_8byte_float(f):
+    qq = f.read(8);
+    output = struct.unpack('<d',qq)[0]
+    output = int(output)
+    return output
+
 def skip_pages(n, ff, bytes_per_page=4096):
     for i in range(n):
         ff.read(bytes_per_page)
