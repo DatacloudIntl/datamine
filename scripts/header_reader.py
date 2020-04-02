@@ -68,9 +68,22 @@ def drop_staggered(string_list, keep_first=True):
     else:
         output = string_list[1::2]
     return output
-#    """
-#    """
-#    pass
+
+def read_staggered_string(f, n_read, n_chunk, keep_first=True):
+    """
+    """
+    string = f.read(n_read)
+    string = string.decode('utf-8')
+    chunk_generator = divide_chunks(string, 4)
+    chunked_string = list(chunk_generator)
+    if keep_first:
+        keepers = chunked_string[0::2]
+    else:
+        keepers = chunked_string[1::2]
+    merged_string = ''.join(keepers)
+    return merged_string
+
+
 def read_header(dm_file, file_type='extended_precision'):
     """
     ::ToDo:: fname is not being correctly parsed
@@ -87,54 +100,36 @@ def read_header(dm_file, file_type='extended_precision'):
         raise Exception
     return header
 
+def read_int_from_8byte_float(f):
+    qq = f.read(8);
+    output = struct.unpack('<d',qq)[0]
+    output = int(output)
+    return output
+
 def read_ep_header_sans_fields(dm_file):
     """
+    fname: 1-4, x, 9-12, x
+    dbname:17-20, x, 25-28, x
+    desc: 33-36
+
     """
     f = open(dm_file, 'rb')
-#    tmp = f.read(12)
-#    tmp = divide_chunks(tmp, 4)
-#    tmp=list(tmp)
-#    ''.join(tmp)
-#    pdb.set_trace()
-    name_1 = f.read(4);#name1
-    name_1 = struct.unpack('cccc',name_1)
-    name_1 = merge_binary_strings(name_1)
-    f = skip_bytes(f, 4)
-    name_2 = f.read(4);#name2
-    name_2 = struct.unpack('cccc',name_2)
-    name_2 = merge_binary_strings(name_2)
-    fname = '{}{}'.format(name_1, name_2)
-    #</embedded filename>
-
-    #<embedded database name>
-    print('dbname no longer in use, skipping')
-    qq = f.read(16);print('2. dbname');print(qq);print('\n')
-    #</embedded database name>
-
-    #<description>
-    description = f.read(160);print('3. description');
-    #can pull out ever
-    print(description);print('\n');
-
-    #</description>
-
-    qq = f.read(4);#skip
-    qq = f.read(8);print('4. date');print(qq);
-    date = struct.unpack('<d',qq)[0]
-    print(date)
-    print('\n');
-
-    n_fields = f.read(8);
-    n_fields = struct.unpack('<d',n_fields)[0]
+    fname = read_staggered_string(f, 16, 4, keep_first=True)
+    print('1. fname={} ok'.format(fname))
+    dbname = read_staggered_string(f, 16, 4, keep_first=True)
+    print('2. dbname={} ok'.format(dbname))
+    description = read_staggered_string(f, 160, 4, keep_first=True)
+    print('3. description={} ok'.format(description))
+    date = read_int_from_8byte_float(f)
+    print("4. date {}".format(date))
+    n_fields = read_int_from_8byte_float(f)
     print('5. nfields {}'.format(n_fields));
-
-    qq = f.read(8);
-    n_last_page = struct.unpack('<d',qq)[0]
-    print('6. nlast page {}\n'.format(n_last_page))
-
-    qq = f.read(8);
-    n_last_record = struct.unpack('<d',qq)[0]
-    print('7. nlast record {}\n'.format(n_last_record));
+    n_last_page = read_int_from_8byte_float(f)
+    print('6. nlast page {}'.format(n_last_page))
+    n_last_record = read_int_from_8byte_float(f)
+    print('7. nlast record {}'.format(n_last_record));
+    pdb.set_trace()
+    print('\n');
     f.close()
     #12+16+160+4+8+8+8+8+68*56
     header = DatamineHeader()
