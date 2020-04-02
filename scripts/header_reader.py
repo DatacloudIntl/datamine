@@ -27,6 +27,13 @@ class DatamineHeader(object):
     def __init__(self):
         """
         self.n_last_record: Number of last logical data record within the last page
+        Some bookkeeping it is pointless to code:
+            EP has 224bytes before fields begin, and last 32 are not used, thus
+            256 bytes unavailable for data_fields on page 1.
+            (4096bytes_per_page-256used)/56perfield = 68.57
+            So Max Fields on Page 1 of EP is 68
+            Max Fields on any subsequent page is (4096-32)/56 = 72.57
+            So Max Fields on Page > 2 of EP is 72
         """
         self.dm_filename = None
         self.precision = None
@@ -51,11 +58,26 @@ class DatamineHeader(object):
         return
 
     def count_header_pages(self):
+        """
+        pretty sure this is dependant only on self.n_fields
+        """
+        num_header_pages = 1
+        n_fields_past_page_1 = self.number_of_fields - 68
+        if n_fields_past_page_1 > 0:
+        #the number more pages you need is ceiling of n_fields/72
+            n_extra_pages = np.ceil(n_fields_past_page_1/72.0)
+            num_header_pages += n_extra_pages
+        self.n_pages_header = num_header_pages
+        return num_header_pages
+
+
+    @property
+    def bytes_per_field(self):
         if self.precision=='single':
-            print('no support for SP')
-            raise Exception
+            return 28
         elif self.precision=='extended':
-            print('ok')
+            return 56
+        #12+16+160+4+8+8+8+8+68*56
 
 def divide_chunks(string, n):
     # looping till length l
@@ -128,10 +150,7 @@ def read_ep_header_sans_fields(dm_file):
     print('6. nlast page {}'.format(n_last_page))
     n_last_record = read_int_from_8byte_float(f)
     print('7. nlast record {}'.format(n_last_record));
-    pdb.set_trace()
-    print('\n');
     f.close()
-    #12+16+160+4+8+8+8+8+68*56
     header = DatamineHeader()
     header.embedded_filename = fname
     header.number_of_fields = int(n_fields)
@@ -167,6 +186,10 @@ def read_header_ep(dm_file):
     NUM_HEADER_PAGES = 2
     NUM_DATA_FIELDS = [68, 7]
     header = read_ep_header_sans_fields(dm_file)
+    header.count_header_pages()
+    print('d')
+    print(header.count_header_pages)
+    pdb.set_trace()
     f = open(dm_file, 'rb')
     f = skip_bytes(f, 224)
     #12+16+160+4+8+8+8+8+68*56
