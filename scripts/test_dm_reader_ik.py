@@ -41,7 +41,10 @@ data_dir = os.path.join(mine_dir, 'Wireframes')
 dm_base = 'ANDpt.dm'
 dm_file = os.path.join(data_dir, dm_base)
 #datamine_file_object = read_header(dm_file)
+datamine_file = DatamineFile(dm_file_path=dm_file)
+datamine_file.read_header()
 datamine_file_object = read_data(dm_file, file_type='extended_precision')
+
 df = datamine_file_object.cast_fields_to_df()
 df.to_csv(dm_base.replace('.dm', '.csv'))
 pdb.set_trace()

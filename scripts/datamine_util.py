@@ -43,7 +43,7 @@ from binary_helpers import read_staggered_string
 from header_fields import field_reader_ep
 
 class DatamineFile(object):
-    def __init__(self, dm_file_path=None):
+    def __init__(self, dm_file_path=None, precision=None):
         """
         self.n_last_record: Number of last logical data record within the last page
         Some bookkeeping it is pointless to code:
@@ -56,6 +56,7 @@ class DatamineFile(object):
 
         """
         self.dm_file_path = dm_file_path
+        self.data_dict = None
 
         #<Header>
         self.embedded_filename = None #H
@@ -69,7 +70,7 @@ class DatamineFile(object):
         #</Header>
 
         #<Derived>
-        self.precision = None
+        self.precision = precision
         self._bytes_per_page = None
         self._usable_bytes_per_page = None
         self._static_bytes_page_1 = None
@@ -85,17 +86,30 @@ class DatamineFile(object):
 
     def determine_precision(self):
         """
+        this can be done programatically by reading the description
+        as SP and as EP.  If the EP description contains binary, then
+        it is SP
         """
-        print("insert logic to determine if EP or SP file here based on self.dm_filename")
-        self.precision = 'extended'
+        print("insert logic to determine if EP or SP file here based on \
+              file contents")
+        if self.precision is None:
+            f=open(self.dm_file_path, 'rb')
+            f.seek(32)
+            qq = f.read(160)#text field with description, will contain binary in SP case
+            f.close()
+            try:
+                qq.decode('UTF-8')
+                self.precision = 'extended'
+            except UnicodeDecodeError:
+                self.precision = 'single'
         if self.precision=='single':
             self._bytes_per_page = 2048
             self._usable_bytes_per_page = 2032
             self._bytes_per_header_field = 28
             self._static_bytes_page_1 = 112
             self._bytes_per_word = 4
-            print('warning, single precison reader DNE')
-            raise Exception
+            print('warning, single precison reader NEVER TESTED\
+                  as there were no example files.  It likely wont work!')
         elif self.precision=='extended':
             self._bytes_per_page = 4096
             self._usable_bytes_per_page = 4064
@@ -360,19 +374,22 @@ def read_header(dm_file, file_type='extended_precision'):
     return datamine_file
 
 def assign_page_to_book(page, book, i_page, n_rows, last_page=False):
+    """
+    I find it interesting that I do not need to return book.  The change is
+    made on the input book, but the book outside this function is modified
+    ... it feels fortranic.
+    """
     if last_page:
         for k in page.keys():
             book[k][-n_rows:] = page[k]
     else:
         for k in page.keys():
             book[k][i_page*n_rows:(i_page+1)*n_rows] = page[k]
-    return book
+    return
 
 
-def read_data(dm_file, file_type='extended_precision'):
+def read_data(dm_file):
     """
-    warning: this only works for EP files, need a SP reader as well
-
     """
     datamine_file = DatamineFile()
     datamine_file.dm_file_path = dm_file
@@ -380,7 +397,6 @@ def read_data(dm_file, file_type='extended_precision'):
     datamine_file.read_header()
     n_rows_big = datamine_file.num_data_records
     book_dict = datamine_file.initialize_data_dict_for_readin(n_rows_big)
-    #pdb.set_trace()
     last_page = False
     for i_page in range(datamine_file.num_pages_data):
         page_num = i_page + datamine_file.num_pages_header
@@ -394,20 +410,13 @@ def read_data(dm_file, file_type='extended_precision'):
             assign_page_to_book(page_dict, book_dict, i_page, n_rows, last_page=True)
         else:
             assign_page_to_book(page_dict, book_dict, i_page, n_rows)
-        #pdb.set_trace()
-    #pdb.set_trace()
-    return book_dict
-
-
-
+    datamine_file.data_dict = book_dict
     return datamine_file
-
 
 
 def main():
     """
     """
-    read_header()
     print("finito {}".format(datetime.datetime.now()))
 
 if __name__ == "__main__":
