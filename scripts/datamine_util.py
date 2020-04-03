@@ -66,6 +66,7 @@ class DatamineFile(object):
         self.n_last_record = None #H
         self.data_fields = None #
         self._num_pages_header = None
+        self._num_fields_per_page = None
         self._constant_fields = None
         self._tabular_fields = None
 
@@ -97,24 +98,28 @@ class DatamineFile(object):
             self._num_pages_header = int(num_pages_header)
         return self._num_pages_header
 
-    def get_number_of_fields_per_page(self):
+    @property
+    def num_fields_per_page(self):
         """
         returns a list of number of fields on each page of header
         e.g. [68, 7]
+        68 and 72 are baked in numbers of the format.
+        68 fields max on page 1, and 72 on every header page thereafter
         """
-        fields_per_page = []
-        if self.num_pages_header==1:
-            fields_per_page.append(self.number_of_fields)
-        else:
-            fields_per_page.append(68)
-        n_fields_remain = self.number_of_fields - 68
-        while n_fields_remain > 72:
-            fields_per_page.append(72)
-            n_fields_remain -= 72
-        if n_fields_remain > 0:
-            fields_per_page.append(n_fields_remain)
-        self.number_of_fields_per_page = fields_per_page
-        return fields_per_page
+        if self._num_fields_per_page is None:
+            fields_per_page = []
+            if self.num_pages_header==1:
+                fields_per_page.append(self.number_of_fields)
+            else:
+                fields_per_page.append(68)
+            n_fields_remain = self.number_of_fields - 68
+            while n_fields_remain > 72:
+                fields_per_page.append(72)
+                n_fields_remain -= 72
+            if n_fields_remain > 0:
+                fields_per_page.append(n_fields_remain)
+            self._num_fields_per_page = fields_per_page
+        return self._num_fields_per_page
 
     @property
     def bytes_per_page(self):
@@ -161,7 +166,7 @@ class DatamineFile(object):
             return 0
 
     def read_fields_from_page(self, ff, page_number):
-        num_fields = self.number_of_fields_per_page[page_number]
+        num_fields = self.num_fields_per_page[page_number]
         print("read fields may need modification for single precision")
         output = num_fields * [None]
         for i in range(num_fields):#68+1
@@ -212,7 +217,6 @@ class DatamineFile(object):
         """
         """
         self.read_ep_header_sans_fields(verbose=verbose)
-        self.get_number_of_fields_per_page()
         print("header has {} pages".format(self.num_pages_header))
         fields = []
         for i_page in range(self.num_pages_header):
