@@ -23,30 +23,11 @@ import struct
 #from collections import defaultdict
 from binary_helpers import determine_number_of_pages_in_header
 from binary_helpers import skip_pages
-from header_reader import read_header
+from header import read_header
 
-BYTES_PER_PAGE = 4096
+#can get this programatically now;
 HEADER_FIELDS_NOT_IN_TABLE = ['XMORIG', 'YMORIG', 'ZMORIG', 'NX', 'NY', 'NZ']
-#<SET PATHS>
-home = os.path.expanduser("~/")
-#mine_dir = os.path.join(home, 'Documents/ian/cobre_panama')
-mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
-data_dir = os.path.join(mine_dir, 'Model')
-dm_file = os.path.join(data_dir, 'borcddmod150220.dm')
 
-#<Testwf>
-#data_dir = os.path.join(mine_dir, 'Wireframes')
-#dm_file = os.path.join(data_dir, 'ANDpt.dm')
-#</Testwf>
-
-
-manu_dir = os.path.join(mine_dir, 'ClientBM')
-dm_npy_file = os.path.join(data_dir, 'book.npy')
-dm_csv = os.path.join(data_dir, 'borcddmod150220.csv')
-manu_csv = os.path.join(manu_dir, 'borcddmod150220.csv')
-#from dc_mwd.mine_data_cache_paths import MineDataCachePaths
-#MINE_DATA_CACHE_PATH = MineDataCachePaths('first_quantum_minerals', 'cobre_panama')
-#</SET PATHS>
 
 
 
@@ -118,7 +99,7 @@ def cast_book_to_dataframe(book, header):
     df = pd.DataFrame.from_dict(data_dict)
     return df
 
-def create_df_from_npy_array_book():
+def create_df_from_npy_array_book(dm_file):
     """
     read dm_file (from original dm or stashed npy array)
     """

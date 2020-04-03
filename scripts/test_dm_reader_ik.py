@@ -23,13 +23,34 @@ import pandas as pd
 import pdb
 
 from helper_functions import create_df_from_npy_array_book
-from helper_functions import dm_csv
-from helper_functions import manu_csv
+#from helper_functions import dm_csv
+#from helper_functions import manu_csv
 
 SAVE_CSV = False
 
+#<SET PATHS>
+home = os.path.expanduser("~/")
+#mine_dir = os.path.join(home, 'Documents/ian/cobre_panama')
+mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
+data_dir = os.path.join(mine_dir, 'Model')
+dm_file = os.path.join(data_dir, 'borcddmod150220.dm')
 
-df = create_df_from_npy_array_book()
+#<Testwf>
+#data_dir = os.path.join(mine_dir, 'Wireframes')
+#dm_file = os.path.join(data_dir, 'ANDpt.dm')
+#</Testwf>
+
+
+manu_dir = os.path.join(mine_dir, 'ClientBM')
+dm_npy_file = os.path.join(data_dir, 'book.npy')
+dm_csv = os.path.join(data_dir, 'borcddmod150220.csv')
+manu_csv = os.path.join(manu_dir, 'borcddmod150220.csv')
+#from dc_mwd.mine_data_cache_paths import MineDataCachePaths
+#MINE_DATA_CACHE_PATH = MineDataCachePaths('first_quantum_minerals', 'cobre_panama')
+#</SET PATHS>
+
+
+df = create_df_from_npy_array_book(dm_file)
 
 if SAVE_CSV:
     df.to_csv(dm_csv, index=False)

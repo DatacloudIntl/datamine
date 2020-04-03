@@ -57,14 +57,14 @@ class DatamineHeader(object):
         self.dm_file_path = None
         self.precision = None
         self.n_pages_header = None
-        self.embedded_filename = None
-        self.dbname = None
-        self.description = None
-        self.date = None
-        self.number_of_fields = None
-        self.n_last_page = None
-        self.n_last_record = None
-        self.data_fields = None
+        self.embedded_filename = None #H
+        self.dbname = None #H
+        self.description = None #H
+        self.date = None #H
+        self.number_of_fields = None #H
+        self.n_last_page = None #H
+        self.n_last_record = None #H
+        self.data_fields = None #
         self.fields = None
 
     def determine_precision(self):
@@ -96,7 +96,6 @@ class DatamineHeader(object):
         e.g. [68, 7]
         """
         fields_per_page = []
-        num_tot_fields = self.number_of_fields
         if self.n_pages_header==1:
             fields_per_page.append(self.number_of_fields)
         else:
