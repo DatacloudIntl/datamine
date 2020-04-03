@@ -56,7 +56,8 @@ class DatamineFile(object):
 
         """
         self.dm_file_path = dm_file_path
-        self.precision = None
+
+        #<Header>
         self.embedded_filename = None #H
         self.dbname = None #H
         self.description = None #H
@@ -65,20 +66,42 @@ class DatamineFile(object):
         self.n_last_page = None #H
         self.n_last_record = None #H
         self.data_fields = None #
+        #</Header>
+
+        #<Derived>
+        self.precision = None
+        self._bytes_per_page = None
+        self._usable_bytes_per_page = None
+        self._static_bytes_page_1 = None
         self._num_pages_header = None
+        self._num_pages_data = None
+        self._num_data_records = None
         self._num_fields_per_page = None
         self._constant_fields = None
         self._tabular_fields = None
-
-
+        self._num_rows_per_data_page = None
+        self._bytes_per_word = None
+        #</Derived>
 
     def determine_precision(self):
+        """
+        """
         print("insert logic to determine if EP or SP file here based on self.dm_filename")
         self.precision = 'extended'
         if self.precision=='single':
+            self._bytes_per_page = 2048
+            self._usable_bytes_per_page = 2032
+            self._bytes_per_header_field = 28
+            self._static_bytes_page_1 = 112
+            self._bytes_per_word = 4
             print('warning, single precison reader DNE')
             raise Exception
-        else:
+        elif self.precision=='extended':
+            self._bytes_per_page = 4096
+            self._usable_bytes_per_page = 4064
+            self._bytes_per_header_field = 56
+            self._static_bytes_page_1 = 224
+            self._bytes_per_word = 8
             print("reading Extended precision header")
         return
 
@@ -123,27 +146,15 @@ class DatamineFile(object):
 
     @property
     def bytes_per_page(self):
-        if self.precision=='extended':
-            return 4096
-        elif self.precision=='single':
-            return 2048
-        else:
-            print('precsion unkown')
-            raise Exception
+        return self._bytes_per_page
 
     @property
-    def bytes_per_field(self):
-        if self.precision=='single':
-            return 28
-        elif self.precision=='extended':
-            return 56
-        #12+16+160+4+8+8+8+8+68*56
+    def usable_bytes_per_page(self):
+        return self._usable_bytes_per_page
+
     @property
     def static_bytes_page_1(self):
-        if self.precision=='single':
-            return 112
-        elif self.precision=='extended':
-            return 224
+        return self._static_bytes_page_1
 
     @property
     def constant_fields(self):
@@ -159,11 +170,34 @@ class DatamineFile(object):
             self._tabular_fields = tabular_fields
         return self._tabular_fields
 
-    def n_skip_bytes_to_read_fields(self, page_number):
-        if page_number==0:
-            return self.static_bytes_page_1
-        else:
-            return 0
+    @property
+    def bytes_per_word(self):
+        return self._bytes_per_word
+
+    @property
+    def num_rows_per_data_page(self):
+        if self._num_rows_per_data_page is None:
+            num_fields_per_row = len(self.tabular_fields)
+            bytes_per_row = num_fields_per_row * self.bytes_per_word
+            rows_per_page = 1.0 * self.usable_bytes_per_page / bytes_per_row
+            self._num_rows_per_data_page = int(rows_per_page)
+        return self._num_rows_per_data_page
+
+    @property
+    def num_pages_data(self):
+        if self._num_pages_data is None:
+            total_pages = self.n_last_page
+            n_pages_data = total_pages - self.num_pages_header
+            self._num_pages_data = n_pages_data
+        return self._num_pages_data
+
+    @property
+    def num_data_records(self):
+        if self._num_data_records is None:
+            num_full_data_pages = self.num_pages_data - 1
+            total_rows = num_full_data_pages * self.num_rows_per_data_page + self.n_last_record
+            self._num_data_records = total_rows
+        return self._num_data_records
 
     def read_fields_from_page(self, ff, page_number):
         num_fields = self.num_fields_per_page[page_number]
@@ -269,6 +303,51 @@ class DatamineFile(object):
         df = pd.DataFrame(data=data_dict)
         return df
 
+    def initialize_data_dict_for_readin(self, n_rows):
+        """
+        """
+        data_dict = {}
+        for field in self.tabular_fields:
+            if field.type =='N':
+                data_dict[field.name] = np.full(n_rows, np.nan)
+            elif field.type =='A':
+                data_dict[field.name] = np.chararray(n_rows,
+                         itemsize=self.bytes_per_word, unicode=True)
+            else:
+                print("UNEXPECTED DTYPE ENCOUNTERED {}".format(field.type))
+                pdb.set_trace()
+        return data_dict
+
+    def data_page_to_dict(self, page_num, n_rows):
+        """
+        This was originally done with all numeric values, using a numpy array
+        We could use structured arrays, but for now will use individual arrays
+        keyed by columns name
+
+        ToDo: parameterize 483, 8, 7x69, 232
+        This is admittedly slow.  It can be sped up if needed but the idea
+        is that we will only read dm files once and save to another format
+        """
+
+        n_cols = len(self.tabular_fields)
+        data_dict = self.initialize_data_dict_for_readin(n_rows)
+        types = [x.type for x in self.tabular_fields]
+        names = [x.name for x in self.tabular_fields]
+        f = open(self.dm_file_path, 'rb')
+        f.seek(page_num * self.bytes_per_page)
+        for i_row in range(n_rows):
+            for i_col in range(n_cols):
+                name = names[i_col]
+                qq = f.read(self.bytes_per_word)
+                if types[i_col] == 'N':#numerical
+                    value = struct.unpack('<d',qq)[0]
+                    data_dict[name][i_row] = value
+                else: #alpha
+                    value = qq.decode('utf-8')
+                data_dict[name][i_row] = value
+        f.close()
+        return data_dict
+
 def read_header(dm_file, file_type='extended_precision'):
     """
     warning: this only works for EP files, need a SP reader as well
@@ -280,7 +359,48 @@ def read_header(dm_file, file_type='extended_precision'):
     datamine_file.read_header()
     return datamine_file
 
+def assign_page_to_book(page, book, i_page, n_rows, last_page=False):
+    if last_page:
+        for k in page.keys():
+            book[k][-n_rows:] = page[k]
+    else:
+        for k in page.keys():
+            book[k][i_page*n_rows:(i_page+1)*n_rows] = page[k]
+    return book
 
+
+def read_data(dm_file, file_type='extended_precision'):
+    """
+    warning: this only works for EP files, need a SP reader as well
+
+    """
+    datamine_file = DatamineFile()
+    datamine_file.dm_file_path = dm_file
+    datamine_file.determine_precision()
+    datamine_file.read_header()
+    n_rows_big = datamine_file.num_data_records
+    book_dict = datamine_file.initialize_data_dict_for_readin(n_rows_big)
+    #pdb.set_trace()
+    last_page = False
+    for i_page in range(datamine_file.num_pages_data):
+        page_num = i_page + datamine_file.num_pages_header
+        n_rows = datamine_file.num_rows_per_data_page
+        if page_num == datamine_file.n_last_page - 1:
+            last_page=True
+            n_rows = datamine_file.n_last_record
+        page_dict = datamine_file.data_page_to_dict(page_num, n_rows)
+        print(i_page, page_num, datamine_file.n_last_page,i_page*n_rows,(i_page+1)*n_rows)
+        if last_page:
+            assign_page_to_book(page_dict, book_dict, i_page, n_rows, last_page=True)
+        else:
+            assign_page_to_book(page_dict, book_dict, i_page, n_rows)
+        #pdb.set_trace()
+    #pdb.set_trace()
+    return book_dict
+
+
+
+    return datamine_file
 
 
 

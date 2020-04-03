@@ -24,6 +24,7 @@ import pdb
 
 from helper_functions import create_df_from_npy_array_book
 from datamine_util import read_header
+from datamine_util import read_data#(dm_file, file_type='extended_precision')
 #from helper_functions import dm_csv
 #from helper_functions import manu_csv
 
@@ -36,8 +37,11 @@ home = os.path.expanduser("~/")
 mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
 data_dir = os.path.join(mine_dir, 'Model')
 dm_base = 'borcddmod150220.dm'
+data_dir = os.path.join(mine_dir, 'Wireframes')
+dm_base = 'ANDpt.dm'
 dm_file = os.path.join(data_dir, dm_base)
-datamine_file_object = read_header(dm_file)
+#datamine_file_object = read_header(dm_file)
+datamine_file_object = read_data(dm_file, file_type='extended_precision')
 df = datamine_file_object.cast_fields_to_df()
 df.to_csv(dm_base.replace('.dm', '.csv'))
 pdb.set_trace()

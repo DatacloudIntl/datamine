@@ -42,6 +42,7 @@ def read_staggered_string(f, n_read, n_chunk, keep_first=True):
     else:
         keepers = chunked_string[1::2]
     merged_string = ''.join(keepers)
+    merged_string = merged_string.strip()
     return merged_string
 
 def read_int_from_8byte_float(f):
