@@ -144,6 +144,7 @@ class DatamineHeader(object):
         print("read fields may need modification for single precision")
         output = num_fields * [None]
         for i in range(num_fields):#68+1
+            #pdb.set_trace()
             field = field_reader_ep(ff)
             output[i] = field
         return output
@@ -152,7 +153,7 @@ class DatamineHeader(object):
         if self.precision=='extended':
             self.read_extended_precison()
 
-    def read_ep_header_sans_fields(self):
+    def read_ep_header_sans_fields(self, verbose=True):
         """
         fname: 1-4, x, 9-12, x
         dbname:17-20, x, 25-28, x
@@ -162,21 +163,25 @@ class DatamineHeader(object):
         dm_file = self.dm_file_path
         f = open(dm_file, 'rb')
         fname = read_staggered_string(f, 16, 4, keep_first=True)
-        print('1. fname={} ok'.format(fname))
         dbname = read_staggered_string(f, 16, 4, keep_first=True)
-        print('2. dbname={} ok'.format(dbname))
         description = read_staggered_string(f, 160, 4, keep_first=True)
-        print('3. description={} ok'.format(description))
         date = read_int_from_8byte_float(f)
-        print("4. date {}".format(date))
         n_fields = read_int_from_8byte_float(f)
-        print('5. nfields {}'.format(n_fields));
         n_last_page = read_int_from_8byte_float(f)
-        print('6. nlast page {}'.format(n_last_page))
         n_last_record = read_int_from_8byte_float(f)
-        print('7. nlast record {}'.format(n_last_record));
         f.close()
+        if verbose:
+            print('1. fname={} ok'.format(fname))
+            print('2. dbname={} ok'.format(dbname))
+            print('3. description={} ok'.format(description))
+            print("4. date {}".format(date))
+            print('5. nfields {}'.format(n_fields))
+            print('6. nlast page {}'.format(n_last_page))
+            print('7. nlast record {}'.format(n_last_record))
         self.embedded_filename = fname
+        self.dbname = dbname
+        self.description = description
+        self.date = date
         self.number_of_fields = int(n_fields)
         self.n_last_page = int(n_last_page)
         self.n_last_record = int(n_last_record)
@@ -189,11 +194,10 @@ class DatamineHeader(object):
         self.count_header_pages()
         self.get_number_of_fields_per_page()
         print("header has {} pages".format(self.n_pages_header))
-
         fields = []
         for i_page in range(self.n_pages_header):
             if i_page==0:
-                n_skip_bytes = self.static_bytes_page_1
+                n_skip_bytes = self.static_bytes_page_1#224
             else:
                 n_skip_bytes = i_page * self.bytes_per_page
             f = open(self.dm_file_path, 'rb')

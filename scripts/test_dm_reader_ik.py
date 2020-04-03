@@ -23,6 +23,7 @@ import pandas as pd
 import pdb
 
 from helper_functions import create_df_from_npy_array_book
+from header import read_header
 #from helper_functions import dm_csv
 #from helper_functions import manu_csv
 
@@ -36,8 +37,16 @@ data_dir = os.path.join(mine_dir, 'Model')
 dm_file = os.path.join(data_dir, 'borcddmod150220.dm')
 
 #<Testwf>
-#data_dir = os.path.join(mine_dir, 'Wireframes')
+data_dir = os.path.join(mine_dir, 'Wireframes')
 #dm_file = os.path.join(data_dir, 'ANDpt.dm')
+dm_files = os.listdir(data_dir)
+#pdb.set_trace()
+for dm_base in dm_files:
+    dm_file = os.path.join(data_dir, dm_base)
+    pdb.set_trace()
+    header = read_header(dm_file)
+    pdb.set_trace()
+
 #</Testwf>
 
 
