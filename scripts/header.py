@@ -42,8 +42,8 @@ from binary_helpers import read_int_from_8byte_float
 from binary_helpers import read_staggered_string
 from header_fields import field_reader_ep
 
-class DatamineHeader(object):
-    def __init__(self):
+class DatamineFile(object):
+    def __init__(self, dm_file_path=None):
         """
         self.n_last_record: Number of last logical data record within the last page
         Some bookkeeping it is pointless to code:
@@ -53,10 +53,10 @@ class DatamineHeader(object):
             So Max Fields on Page 1 of EP is 68
             Max Fields on any subsequent page is (4096-32)/56 = 72.57
             So Max Fields on Page > 2 of EP is 72
+
         """
-        self.dm_file_path = None
+        self.dm_file_path = dm_file_path
         self.precision = None
-        self.n_pages_header = None
         self.embedded_filename = None #H
         self.dbname = None #H
         self.description = None #H
@@ -65,7 +65,11 @@ class DatamineHeader(object):
         self.n_last_page = None #H
         self.n_last_record = None #H
         self.data_fields = None #
-        self.fields = None
+        self._n_pages_header = None
+        self._constant_fields = None
+        self._tabular_fields = None
+
+
 
     def determine_precision(self):
         print("insert logic to determine if EP or SP file here based on self.dm_filename")
@@ -77,18 +81,21 @@ class DatamineHeader(object):
             print("reading Extended precision header")
         return
 
-    def count_header_pages(self):
+    @property
+    def num_pages_header(self):
         """
         pretty sure this is dependant only on self.n_fields
+        The number more pages you need is ceiling of n_fields/72
+        68 is a baked in property of page 1, it has max 68 fields
         """
-        num_header_pages = 1
-        n_fields_past_page_1 = self.number_of_fields - 68
-        if n_fields_past_page_1 > 0:
-        #the number more pages you need is ceiling of n_fields/72
-            n_extra_pages = np.ceil(n_fields_past_page_1/72.0)
-            num_header_pages += n_extra_pages
-        self.n_pages_header = int(num_header_pages)
-        return
+        if self._n_pages_header is None:
+            num_header_pages = 1
+            n_fields_past_page_1 = self.number_of_fields - 68
+            if n_fields_past_page_1 > 0:
+                n_extra_pages = np.ceil(n_fields_past_page_1/72.0)
+                num_header_pages += n_extra_pages
+            self._n_pages_header = int(num_header_pages)
+        return self._n_pages_header
 
     def get_number_of_fields_per_page(self):
         """
@@ -96,7 +103,7 @@ class DatamineHeader(object):
         e.g. [68, 7]
         """
         fields_per_page = []
-        if self.n_pages_header==1:
+        if self.num_pages_header==1:
             fields_per_page.append(self.number_of_fields)
         else:
             fields_per_page.append(68)
@@ -133,6 +140,20 @@ class DatamineHeader(object):
         elif self.precision=='extended':
             return 224
 
+    @property
+    def constant_fields(self):
+        if self._constant_fields is None:
+            constant_fields = [x for x in self.data_fields if x.stored_word==0]
+            self._constant_fields = constant_fields
+        return self._constant_fields
+
+    @property
+    def tabular_fields(self):
+        if self._tabular_fields is None:
+            tabular_fields = [x for x in self.data_fields if x.stored_word!=0]
+            self._tabular_fields = tabular_fields
+        return self._tabular_fields
+
     def n_skip_bytes_to_read_fields(self, page_number):
         if page_number==0:
             return self.static_bytes_page_1
@@ -149,9 +170,9 @@ class DatamineHeader(object):
             output[i] = field
         return output
 
-    def read(self):
+    def read_header(self):
         if self.precision=='extended':
-            self.read_extended_precison()
+            self.read_extended_precison_header()
 
     def read_ep_header_sans_fields(self, verbose=True):
         """
@@ -187,15 +208,14 @@ class DatamineHeader(object):
         self.n_last_record = int(n_last_record)
         return
 
-    def read_extended_precison(self):
+    def read_extended_precison_header(self, verbose=True):
         """
         """
-        self.read_ep_header_sans_fields()
-        self.count_header_pages()
+        self.read_ep_header_sans_fields(verbose=verbose)
         self.get_number_of_fields_per_page()
-        print("header has {} pages".format(self.n_pages_header))
+        print("header has {} pages".format(self.num_pages_header))
         fields = []
-        for i_page in range(self.n_pages_header):
+        for i_page in range(self.num_pages_header):
             if i_page==0:
                 n_skip_bytes = self.static_bytes_page_1#224
             else:
@@ -206,14 +226,35 @@ class DatamineHeader(object):
             fields += new_fields
             f.close()
         self.data_fields = fields
+        self.constant_fields #init
+        self.tabular_fields #init
+        if verbose:
+            print("CONSTANT FIELDS")
+            for field in self.constant_fields:
+                out_text = '{} : {}'.format(field.name, field.default_value)
+                print(out_text)
+            print('\n')
+            for field in self.tabular_fields:
+                out_text = '{} : {}'.format(field.name, field.default_value)
+                print(out_text)
         return
 
-    def cast_fields_to_df(self):
-        default_values = [x.default_value for x in self.data_fields]
-        field_names = [x.name for x in self.data_fields]
-        stored_words = [x.stored_word for x in self.data_fields]
-        word_numbers = [x.word_number for x in self.data_fields]
-        types = [x.type for x in self.data_fields]
+    def cast_fields_to_df(self, field_type=None):
+        """
+        supports writing of constant, variable (tabular), or all (default)
+        """
+        if field_type is None:
+            fields = self.data_fields
+        elif field_type == 'constant':
+            fields = self.constant_fields
+        elif field_type == 'tabular':
+            fields = self.tabular_fields
+
+        default_values = [x.default_value for x in fields]
+        field_names = [x.name for x in fields]
+        stored_words = [x.stored_word for x in fields]
+        word_numbers = [x.word_number for x in fields]
+        types = [x.type for x in fields]
 
         data_dict = {}
         data_dict['default_values'] = default_values
@@ -229,11 +270,11 @@ def read_header(dm_file, file_type='extended_precision'):
     warning: this only works for EP files, need a SP reader as well
 
     """
-    header = DatamineHeader()
-    header.dm_file_path = dm_file
-    header.determine_precision()
-    header.read()
-    return header
+    datamine_file = DatamineFile()
+    datamine_file.dm_file_path = dm_file
+    datamine_file.determine_precision()
+    datamine_file.read_header()
+    return datamine_file
 
 
 

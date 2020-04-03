@@ -23,28 +23,36 @@ import pandas as pd
 import pdb
 
 from helper_functions import create_df_from_npy_array_book
-from header import read_header
+from datamine_util import read_header
 #from helper_functions import dm_csv
 #from helper_functions import manu_csv
 
 SAVE_CSV = False
+MASS_TEST = False
 
 #<SET PATHS>
 home = os.path.expanduser("~/")
 #mine_dir = os.path.join(home, 'Documents/ian/cobre_panama')
 mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
 data_dir = os.path.join(mine_dir, 'Model')
-dm_file = os.path.join(data_dir, 'borcddmod150220.dm')
-
+dm_base = 'borcddmod150220.dm'
+dm_file = os.path.join(data_dir, dm_base)
+datamine_file_object = read_header(dm_file)
+df = datamine_file_object.cast_fields_to_df()
+df.to_csv(dm_base.replace('.dm', '.csv'))
+pdb.set_trace()
 #<Testwf>
-data_dir = os.path.join(mine_dir, 'Wireframes')
-#dm_file = os.path.join(data_dir, 'ANDpt.dm')
-dm_files = os.listdir(data_dir)
-#pdb.set_trace()
-for dm_base in dm_files:
-    dm_file = os.path.join(data_dir, dm_base)
-    pdb.set_trace()
-    header = read_header(dm_file)
+if MASS_TEST:
+    data_dir = os.path.join(mine_dir, 'Wireframes')
+    #dm_file = os.path.join(data_dir, 'ANDpt.dm')
+    dm_files = os.listdir(data_dir)
+    #pdb.set_trace()
+    for dm_base in dm_files:
+        dm_file = os.path.join(data_dir, dm_base)
+        #pdb.set_trace()
+        header = read_header(dm_file)
+        df = header.cast_fields_to_df()
+        df.to_csv(dm_base.replace('.dm', '.csv'))
     pdb.set_trace()
 
 #</Testwf>
