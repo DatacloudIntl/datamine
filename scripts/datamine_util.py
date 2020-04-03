@@ -65,7 +65,7 @@ class DatamineFile(object):
         self.n_last_page = None #H
         self.n_last_record = None #H
         self.data_fields = None #
-        self._n_pages_header = None
+        self._num_pages_header = None
         self._constant_fields = None
         self._tabular_fields = None
 
@@ -88,14 +88,14 @@ class DatamineFile(object):
         The number more pages you need is ceiling of n_fields/72
         68 is a baked in property of page 1, it has max 68 fields
         """
-        if self._n_pages_header is None:
-            num_header_pages = 1
+        if self._num_pages_header is None:
+            num_pages_header = 1
             n_fields_past_page_1 = self.number_of_fields - 68
             if n_fields_past_page_1 > 0:
                 n_extra_pages = np.ceil(n_fields_past_page_1/72.0)
-                num_header_pages += n_extra_pages
-            self._n_pages_header = int(num_header_pages)
-        return self._n_pages_header
+                num_pages_header += n_extra_pages
+            self._num_pages_header = int(num_pages_header)
+        return self._num_pages_header
 
     def get_number_of_fields_per_page(self):
         """
