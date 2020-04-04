@@ -65,6 +65,8 @@ def field_reader_ep(ff):
     field.word_number = word_number
     if word_number != 1:
         print("WARNING! Weve never seen a word number not == 1")
+        print("word number = {}, for {}".format(word_number, field_name))
+        #pdb.set_trace()
 
     return field
 

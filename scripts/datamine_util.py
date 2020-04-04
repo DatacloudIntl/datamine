@@ -89,9 +89,8 @@ class DatamineFile(object):
         this can be done programatically by reading the description
         as SP and as EP.  If the EP description contains binary, then
         it is SP
+        The logic has not been tested since we do not have SP files yet
         """
-        print("insert logic to determine if EP or SP file here based on \
-              file contents")
         if self.precision is None:
             f=open(self.dm_file_path, 'rb')
             f.seek(32)
@@ -214,8 +213,10 @@ class DatamineFile(object):
         return self._num_data_records
 
     def read_fields_from_page(self, ff, page_number):
+        """
+        print("Read fields may need modification for single precision")
+        """
         num_fields = self.num_fields_per_page[page_number]
-        print("read fields may need modification for single precision")
         output = num_fields * [None]
         for i in range(num_fields):#68+1
             #pdb.set_trace()
@@ -224,8 +225,13 @@ class DatamineFile(object):
         return output
 
     def read_header(self):
+        print("Reading {}".format(self.dm_file_path))
+        self.determine_precision()
         if self.precision=='extended':
             self.read_extended_precison_header()
+        elif self.precision=='single':
+            print("No single precision header reader exists yet")
+            raise Exception
 
     def read_ep_header_sans_fields(self, verbose=True):
         """
@@ -245,13 +251,13 @@ class DatamineFile(object):
         n_last_record = read_int_from_8byte_float(f)
         f.close()
         if verbose:
-            print('1. fname={} ok'.format(fname))
-            print('2. dbname={} ok'.format(dbname))
-            print('3. description={} ok'.format(description))
-            print("4. date {}".format(date))
-            print('5. nfields {}'.format(n_fields))
-            print('6. nlast page {}'.format(n_last_page))
-            print('7. nlast record {}'.format(n_last_record))
+            print('1. fname={}'.format(fname))
+            print('2. dbname={}'.format(dbname))
+            print('3. description={}'.format(description))
+            print("4. date={}".format(date))
+            print('5. nfields={}'.format(n_fields))
+            print('6. nlast page={}'.format(n_last_page))
+            print('7. nlast record={}'.format(n_last_record))
         self.embedded_filename = fname
         self.dbname = dbname
         self.description = description
@@ -282,10 +288,13 @@ class DatamineFile(object):
         self.tabular_fields #init
         if verbose:
             print("CONSTANT FIELDS")
+            if len(self.constant_fields)==0:
+                print('None')
             for field in self.constant_fields:
                 out_text = '{} : {}'.format(field.name, field.default_value)
                 print(out_text)
             print('\n')
+            print("TABULAR FIELDS")
             for field in self.tabular_fields:
                 out_text = '{} : {}'.format(field.name, field.default_value)
                 print(out_text)
@@ -317,6 +326,10 @@ class DatamineFile(object):
         df = pd.DataFrame(data=data_dict)
         return df
 
+    def cast_data_to_df(self):
+        df = pd.DataFrame(data=self.data_dict)
+        return df
+
     def initialize_data_dict_for_readin(self, n_rows):
         """
         """
@@ -345,8 +358,8 @@ class DatamineFile(object):
 
         n_cols = len(self.tabular_fields)
         data_dict = self.initialize_data_dict_for_readin(n_rows)
-        types = [x.type for x in self.tabular_fields]
-        names = [x.name for x in self.tabular_fields]
+        types = [x.type for x in self._tabular_fields]
+        names = [x.name for x in self._tabular_fields]
         f = open(self.dm_file_path, 'rb')
         f.seek(page_num * self.bytes_per_page)
         for i_row in range(n_rows):
@@ -361,6 +374,8 @@ class DatamineFile(object):
                 data_dict[name][i_row] = value
         f.close()
         return data_dict
+
+
 
 def read_header(dm_file, file_type='extended_precision'):
     """
@@ -388,24 +403,25 @@ def assign_page_to_book(page, book, i_page, n_rows, last_page=False):
     return
 
 
-def read_data(dm_file):
+def read_data(dm_file, num_pages=None):
     """
     """
     datamine_file = DatamineFile()
     datamine_file.dm_file_path = dm_file
-    datamine_file.determine_precision()
     datamine_file.read_header()
     n_rows_big = datamine_file.num_data_records
     book_dict = datamine_file.initialize_data_dict_for_readin(n_rows_big)
     last_page = False
-    for i_page in range(datamine_file.num_pages_data):
+    if num_pages is None:
+        num_pages = datamine_file.num_pages_data
+    for i_page in range(num_pages):
         page_num = i_page + datamine_file.num_pages_header
         n_rows = datamine_file.num_rows_per_data_page
         if page_num == datamine_file.n_last_page - 1:
             last_page=True
             n_rows = datamine_file.n_last_record
         page_dict = datamine_file.data_page_to_dict(page_num, n_rows)
-        print(i_page, page_num, datamine_file.n_last_page,i_page*n_rows,(i_page+1)*n_rows)
+#        print(i_page, page_num, datamine_file.n_last_page,i_page*n_rows,(i_page+1)*n_rows)
         if last_page:
             assign_page_to_book(page_dict, book_dict, i_page, n_rows, last_page=True)
         else:
