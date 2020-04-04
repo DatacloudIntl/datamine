@@ -24,34 +24,29 @@ import pdb
 
 from helper_functions import create_df_from_npy_array_book
 from datamine_util import read_header
-from datamine_util import read_data#(dm_file, file_type='extended_precision')
+from datamine_util import read_file
 from datamine_util import DatamineFile
-#from helper_functions import dm_csv
-#from helper_functions import manu_csv
 
 SAVE_CSV = False
 MASS_TEST = True
 
 #<SET PATHS>
 home = os.path.expanduser("~/")
-#mine_dir = os.path.join(home, 'Documents/ian/cobre_panama')
 mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
-#data_dir = os.path.join(mine_dir, 'Model')
-#dm_base = 'borcddmod150220.dm'
-data_dir = os.path.join(mine_dir, 'Wireframes')
-dm_base = 'PYTR.dm'
+data_dir = os.path.join(mine_dir, 'Model')
+dm_base = 'borcddmod150220.dm'
+#data_dir = os.path.join(mine_dir, 'Wireframes')
+#dm_base = 'PYTR.dm'
 #dm_base = 'ANDpt.dm'
 #dm_base = 'ANDtr.dm'
 dm_file = os.path.join(data_dir, dm_base)
 ##datamine_file_object = read_header(dm_file)
-#datamine_file_object = DatamineFile(dm_file_path=dm_file)
-#datamine_file_object.read_data()
-datamine_file_object = read_data(dm_file)#, num_pages=2)
+datamine_file_object = read_file(dm_file)#, num_pages=2)
+df = datamine_file_object.cast_fields_to_df()
+df.to_csv(dm_base.replace('_header.dm', '.csv'))
 df = datamine_file_object.cast_data_to_df()
-
-#df = datamine_file_object.cast_fields_to_df()
-df.to_csv(dm_base.replace('.dm', '.csv'))
-pdb.set_trace()
+df = datamine_file_object.cast_fields_to_df()
+df.to_csv(dm_base.replace('_data.dm', '.csv'))
 
 
 #manu_dir = os.path.join(mine_dir, 'ClientBM')

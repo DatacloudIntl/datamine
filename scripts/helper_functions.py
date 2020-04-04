@@ -30,6 +30,13 @@ HEADER_FIELDS_NOT_IN_TABLE = ['XMORIG', 'YMORIG', 'ZMORIG', 'NX', 'NY', 'NZ']
 
 
 def fix_non_unique_field_names():
+    """
+    add _1, _2, _3 to field names
+    receiving a list of strings;
+    Want to get number and position of all duplicate occurrences
+    Lets use dataframe.values_count
+    """
+
     pass
 
 
