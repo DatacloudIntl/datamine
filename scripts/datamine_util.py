@@ -267,6 +267,15 @@ class DatamineFile(object):
         self.n_last_record = int(n_last_record)
         return
 
+    def check_for_foolishness(self):
+        """
+        a place to put some debugging notes and issues
+        """
+        #NON UNIQUE FIELDS
+        field_names = [x.name for x in self.data_fields]
+        if len(field_names) != len(set(field_names)):
+            print("NON UNIQUE FIELDS DETECTED ???")
+
     def read_extended_precison_header(self, verbose=True):
         """
         """
@@ -286,6 +295,7 @@ class DatamineFile(object):
         self.data_fields = fields
         self.constant_fields #init
         self.tabular_fields #init
+        self.check_for_foolishness()
         if verbose:
             print("CONSTANT FIELDS")
             if len(self.constant_fields)==0:
