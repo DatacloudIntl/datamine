@@ -4,11 +4,6 @@
 Created on Thu Mar 19 10:55:25 2020
 
 @author: kkappler
-wc -l *dm
-4042718 borcddmod150220.dm
-looks like 7 records per page in the dm file
-
-
 
 """
 
@@ -22,9 +17,8 @@ import os
 import pandas as pd
 import pdb
 
-from helper_functions import create_df_from_npy_array_book
 from datamine_util import read_header
-from datamine_util import read_file
+from datamine_util import read_dm_file
 from datamine_util import DatamineFile
 
 SAVE_CSV = False
@@ -41,38 +35,12 @@ dm_base = 'borcddmod150220.dm'
 #dm_base = 'ANDtr.dm'
 dm_file = os.path.join(data_dir, dm_base)
 ##datamine_file_object = read_header(dm_file)
-datamine_file_object = read_file(dm_file)#, num_pages=2)
+datamine_file_object = read_dm_file(dm_file)#, num_pages=2)
 df = datamine_file_object.cast_fields_to_df()
 df.to_csv(dm_base.replace('_header.dm', '.csv'))
 df = datamine_file_object.cast_data_to_df()
 df = datamine_file_object.cast_fields_to_df()
 df.to_csv(dm_base.replace('_data.dm', '.csv'))
-
-
-#manu_dir = os.path.join(mine_dir, 'ClientBM')
-#dm_npy_file = os.path.join(data_dir, 'book.npy')
-#dm_csv = os.path.join(data_dir, 'borcddmod150220.csv')
-#manu_csv = os.path.join(manu_dir, 'borcddmod150220.csv')
-##from dc_mwd.mine_data_cache_paths import MineDataCachePaths
-##MINE_DATA_CACHE_PATH = MineDataCachePaths('first_quantum_minerals', 'cobre_panama')
-##</SET PATHS>
-#
-#
-#df = create_df_from_npy_array_book(dm_file)
-#
-#if SAVE_CSV:
-#    df.to_csv(dm_csv, index=False)
-
-##load mans's dataframe:
-#pdb.set_trace()
-#manu_df = pd.read_csv(manu_csv)
-#qq = manu_df.sort_values(by=['X_UTMZ4N_m', 'Y_UTMZ4N_m', 'Z_m'])#, ignore_index=True)
-#ijk = np.arange(len(manu_df))
-#qq['ijk'] = ijk
-##qq.reset_index(inplace=True)
-#qq.set_index('ijk', inplace=True)
-#print('ok, i think we are set, now lets compare some ijk...')
-#print('find row_ids where ijk unique in dmdf')
 
 
 def mass_test():
@@ -86,7 +54,7 @@ def mass_test():
         dm_file = os.path.join(data_dir, dm_base)
         datamine_file_object = DatamineFile(dm_file_path=dm_file)
         #datamine_file_object.read_header()
-        datamine_file_object = read_data(dm_file)#, num_pages=2)
+        datamine_file_object = read_dm_file(dm_file)#, num_pages=2)
         df = datamine_file_object.cast_data_to_df()
         df.describe()
 #        pdb.set_trace()

@@ -413,7 +413,7 @@ def assign_page_to_book(page, book, i_page, n_rows, last_page=False):
     return
 
 
-def read_file(dm_file, num_pages=None):
+def read_dm_file(dm_file, num_pages=None):
     """
     """
     datamine_file = DatamineFile()
