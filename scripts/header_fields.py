@@ -26,6 +26,7 @@ class DatamineDataField(object):
         self.stored_word = None
         self.word_number = None
         self.default_value = None
+        self.max_words = 1
 
 
 
@@ -38,7 +39,7 @@ def field_reader_ep(ff):
     need only pull N or A from first 4 bytes, so no need to read as 8
     """
     field_name = read_staggered_string(ff, 16, 4, keep_first=True)
-
+    #pdb.set_trace()
     tipo = read_staggered_string(ff, 4, 4, keep_first=True)
     ff.read(4)
     stored_word = ff.read(8);

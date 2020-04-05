@@ -25,7 +25,7 @@ Created on Wed Apr  1 11:40:17 2020
 
 from __future__ import absolute_import, division, print_function
 
-
+import copy
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,6 +41,7 @@ from binary_helpers import merge_binary_strings
 from binary_helpers import read_int_from_8byte_float
 from binary_helpers import read_staggered_string
 from header_fields import field_reader_ep
+from helper_functions import fix_non_unique_field_names
 
 class DatamineFile(object):
     def __init__(self, dm_file_path=None, precision=None):
@@ -80,8 +81,10 @@ class DatamineFile(object):
         self._num_fields_per_page = None
         self._constant_fields = None
         self._tabular_fields = None
+        self._merged_tabular_fields = None
         self._num_rows_per_data_page = None
         self._bytes_per_word = None
+        self.words_per_column = None #list to handle multi-word fields
         #</Derived>
 
     def determine_precision(self):
@@ -184,6 +187,10 @@ class DatamineFile(object):
         return self._tabular_fields
 
     @property
+    def merged_tabular_fields(self):
+        return self._merged_tabular_fields
+
+    @property
     def bytes_per_word(self):
         return self._bytes_per_word
 
@@ -274,7 +281,40 @@ class DatamineFile(object):
         #NON UNIQUE FIELDS
         field_names = [x.name for x in self.data_fields]
         if len(field_names) != len(set(field_names)):
-            print("NON UNIQUE FIELDS DETECTED ???")
+            print("NON UNIQUE FIELDS DETECTED")
+        return
+
+    def merge_tabular_fields(self):
+        """
+        have observed repeated field names, with incrementing word_number
+        Making the assumption that these only occur in string or "A" type fields
+        and that they are sequentially stored in the row
+        This method generates a _merged_tabular_fields, which is tabular
+        fields with duplicates removed, and max_word attribute increased
+        proportionally.
+        """
+        field_names = [x.name for x in self.tabular_fields]
+        #pdb.set_trace()
+        tmp_dict = {}
+        tmp_dict['field_names'] = field_names
+        df = pd.DataFrame(data=tmp_dict)
+        value_counts = df['field_names'].value_counts()
+        #offending_labels = value_counts[value_counts>1]
+        #if len(offending_labels)==0:
+        #    self._merged_tabular_fields = self.tabular_fields
+        #else:
+        #add max_words to data_field
+        for field in self.tabular_fields:
+            print(field.name,'s')
+            field.max_words = value_counts[field.name]
+        #drop multiple occurences by comparing name with the name before it?
+        merged_tabular_fields = [self.data_fields[0],]
+        for i in range(len(self.tabular_fields)-1):
+            if self.data_fields[i+1].name != self.data_fields[i].name:
+                merged_tabular_fields.append(self.data_fields[i+1])
+        self._merged_tabular_fields = merged_tabular_fields
+        self.words_per_column = [x.max_words for x in merged_tabular_fields]
+        return
 
     def read_extended_precison_header(self, verbose=True):
         """
@@ -296,6 +336,7 @@ class DatamineFile(object):
         self.constant_fields #init
         self.tabular_fields #init
         self.check_for_foolishness()
+        self.merge_tabular_fields()
         if verbose:
             print("CONSTANT FIELDS")
             if len(self.constant_fields)==0:
@@ -320,6 +361,8 @@ class DatamineFile(object):
             fields = self.constant_fields
         elif field_type == 'tabular':
             fields = self.tabular_fields
+        elif field_type == 'merged':
+            fields = self.merged_tabular_fields
 
         default_values = [x.default_value for x in fields]
         field_names = [x.name for x in fields]
@@ -343,13 +386,15 @@ class DatamineFile(object):
     def initialize_data_dict_for_readin(self, n_rows):
         """
         """
+#        print("modify this to use compressed tabular fields")
         data_dict = {}
-        for field in self.tabular_fields:
+        for field in self.merged_tabular_fields:
             if field.type =='N':
                 data_dict[field.name] = np.full(n_rows, np.nan)
             elif field.type =='A':
+                n_bytes = self.bytes_per_word * field.max_words
                 data_dict[field.name] = np.chararray(n_rows,
-                         itemsize=self.bytes_per_word, unicode=True)
+                         itemsize=n_bytes, unicode=True)
             else:
                 print("UNEXPECTED DTYPE ENCOUNTERED {}".format(field.type))
                 pdb.set_trace()
@@ -365,27 +410,63 @@ class DatamineFile(object):
         This is admittedly slow.  It can be sped up if needed but the idea
         is that we will only read dm files once and save to another format
         """
-
-        n_cols = len(self.tabular_fields)
+        #pdb.set_trace()
+        n_cols = len(self.merged_tabular_fields)
         data_dict = self.initialize_data_dict_for_readin(n_rows)
-        types = [x.type for x in self._tabular_fields]
-        names = [x.name for x in self._tabular_fields]
+        types = [x.type for x in self.merged_tabular_fields]
+        names = [x.name for x in self.merged_tabular_fields]
         f = open(self.dm_file_path, 'rb')
         f.seek(page_num * self.bytes_per_page)
         for i_row in range(n_rows):
             for i_col in range(n_cols):
                 name = names[i_col]
-                qq = f.read(self.bytes_per_word)
                 if types[i_col] == 'N':#numerical
+                    qq = f.read(self.bytes_per_word)
                     value = struct.unpack('<d',qq)[0]
                     data_dict[name][i_row] = value
                 else: #alpha
+                    #print("NEED A BYTESPERCOLUMN")
+                    n_bytes = self.bytes_per_word * self.words_per_column[i_col]
+                    #print(n_bytes, name)
+                    qq = f.read(n_bytes)
                     value = qq.decode('utf-8')
                 data_dict[name][i_row] = value
         f.close()
         return data_dict
 
+    def read_file(self, num_pages=None):
+        """
+        """
+        self.read_header()
+        n_rows_big = self.num_data_records
+        book_dict = self.initialize_data_dict_for_readin(n_rows_big)
+        last_page = False
+        if num_pages is None:
+            num_pages = self.num_pages_data
+        for i_page in range(num_pages):
+            if np.mod(i_page, 100)==0:
+                print('reading page {} of {}'.format(i_page, num_pages))
+            page_num = i_page + self.num_pages_header
+            n_rows = self.num_rows_per_data_page
+            if page_num == self.n_last_page - 1:
+                last_page=True
+                n_rows = self.n_last_record
+            page_dict = self.data_page_to_dict(page_num, n_rows)
+    #        print(i_page, page_num, datamine_file.n_last_page,i_page*n_rows,(i_page+1)*n_rows)
+            if last_page:
+                assign_page_to_book(page_dict, book_dict, i_page, n_rows, last_page=True)
+            else:
+                assign_page_to_book(page_dict, book_dict, i_page, n_rows)
+        self.data_dict = book_dict
+        return
 
+    def save_header(self, filename=None):
+        df = self.cast_fields_to_df()
+        df.to_csv(self.dm_file_path.replace('.dm', '_header.csv'))
+
+    def save_data(self, filename=None):
+        df = self.cast_data_to_df()
+        df.to_csv(self.dm_file_path.replace('.dm', '_data.csv'))
 
 def read_header(dm_file, file_type='extended_precision'):
     """
@@ -425,6 +506,8 @@ def read_dm_file(dm_file, num_pages=None):
     if num_pages is None:
         num_pages = datamine_file.num_pages_data
     for i_page in range(num_pages):
+        if np.mod(i_page, 100)==0:
+            print('reading page {} of {}'.format(i_page, num_pages))
         page_num = i_page + datamine_file.num_pages_header
         n_rows = datamine_file.num_rows_per_data_page
         if page_num == datamine_file.n_last_page - 1:

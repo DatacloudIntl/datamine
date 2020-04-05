@@ -21,27 +21,38 @@ from datamine_util import read_header
 from datamine_util import read_dm_file
 from datamine_util import DatamineFile
 
+HOME = os.path.expanduser("~/")
+mine_dir = os.path.join(HOME, '.cache/datacloud/first_quantum_minerals/cobre_panama')
 SAVE_CSV = False
 MASS_TEST = True
+TEST = 'block_model'
+#TEST = 'PYTR'
+def set_paths():
 
 #<SET PATHS>
-home = os.path.expanduser("~/")
-mine_dir = os.path.join(home, '.cache/datacloud/first_quantum_minerals/cobre_panama')
-data_dir = os.path.join(mine_dir, 'Model')
-dm_base = 'borcddmod150220.dm'
-#data_dir = os.path.join(mine_dir, 'Wireframes')
-#dm_base = 'PYTR.dm'
-#dm_base = 'ANDpt.dm'
-#dm_base = 'ANDtr.dm'
-dm_file = os.path.join(data_dir, dm_base)
-##datamine_file_object = read_header(dm_file)
-datamine_file_object = read_dm_file(dm_file)#, num_pages=2)
-df = datamine_file_object.cast_fields_to_df()
-df.to_csv(dm_base.replace('_header.dm', '.csv'))
-df = datamine_file_object.cast_data_to_df()
-df = datamine_file_object.cast_fields_to_df()
-df.to_csv(dm_base.replace('_data.dm', '.csv'))
+    if TEST == 'block_model':
+        data_dir = os.path.join(mine_dir, 'Model')
+        dm_base = 'borcddmod150220.dm'
+        dm_file = os.path.join(data_dir, dm_base)
+        return dm_file
+    elif TEST == 'PYTR':
+        data_dir = os.path.join(mine_dir, 'Wireframes')
+        dm_base = 'PYTR.dm'
+    else:
+        pass
+    #dm_base = 'ANDpt.dm'
+    #dm_base = 'ANDtr.dm'
+    dm_file = os.path.join(data_dir, dm_base)
+    return dm_file
 
+def test_file_io(dm_file_path):
+    datamine_file_object = DatamineFile(dm_file_path=dm_file_path)#read_dm_file(dm_file)#, num_pages=2)
+    datamine_file_object.read_file()
+    datamine_file_object.save_header()
+    datamine_file_object.save_data()
+
+#dm_file_path = set_paths()
+#test_file_io(dm_file_path)
 
 def mass_test():
     """
@@ -51,20 +62,40 @@ def mass_test():
     #dm_file = os.path.join(data_dir, 'ANDpt.dm')
     dm_files = os.listdir(data_dir)
     for dm_base in dm_files:
-        dm_file = os.path.join(data_dir, dm_base)
-        datamine_file_object = DatamineFile(dm_file_path=dm_file)
-        #datamine_file_object.read_header()
-        datamine_file_object = read_dm_file(dm_file)#, num_pages=2)
-        df = datamine_file_object.cast_data_to_df()
-        df.describe()
-#        pdb.set_trace()
-        print('\n\n\n\n\n')
-#        #pdb.set_trace()
-#        header = read_header(dm_file)
-#        df = header.cast_fields_to_df()
-#        df.to_csv(dm_base.replace('.dm', '.csv'))
-    #pdb.set_trace()
+        dm_file_path = os.path.join(data_dir, dm_base)
+        test_file_io(dm_file_path)
+#        datamine_file_object = DatamineFile(dm_file_path=dm_file)
+#        #datamine_file_object.read_header()
+#        datamine_file_object = read_dm_file(dm_file)#, num_pages=2)
+#        df = datamine_file_object.cast_data_to_df()
+#        df.describe()
+##        pdb.set_trace()
+#        print('\n\n\n\n\n')
+##        #pdb.set_trace()
+##        header = read_header(dm_file)
+##        df = header.cast_fields_to_df()
+##        df.to_csv(dm_base.replace('.dm', '.csv'))
+#    #pdb.set_trace()
     return
+
+#def create_df_from_npy_array_book(dm_file):
+#    """
+#    read dm_file (from original dm or stashed npy array)
+#    """
+#    #<READ DM AND DUMP TO NPY>
+#    header = read_header(dm_file)
+#    df = header.cast_fields_to_df()
+#    pdb.set_trace()
+#
+#    try:
+#        book = np.load(dm_npy_file)
+#        raise(Exception)
+#    except:
+#        book = read_data_book_from_dm_file(header, dm_file)
+#        np.save(dm_npy_file, book)
+#    #</READ DM AND DUMP TO NPY>
+#    df = cast_book_to_dataframe(book, header)
+#    return df
 
 def main():
     """
