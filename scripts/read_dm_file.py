@@ -61,9 +61,9 @@ def main(args):
     write data csv and then inspect csv file.
 
     """
-    save_header = args.save_header
+    save_header = str2bool(args.save_header)
     header_filename = args.header_filename
-    save_data = args.save_data
+    save_data = str2bool(args.save_data)
     out_file_path = args.output_file
     verbose = str2bool(args.verbose)
     dm_file_path = args.input_file
