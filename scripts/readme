@@ -1,0 +1,4 @@
+To Test, try:
+python read_dm_file.py cpybopt.dm -of=foo.csv
+
+You should wind up with a foo.csv dump of the dm file.
