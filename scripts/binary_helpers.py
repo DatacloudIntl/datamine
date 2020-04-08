@@ -66,33 +66,15 @@ def merge_binary_strings(in_bytes):
     qq = ''.join(qq)
     return qq
 
-
-def determine_if_file_sp_or_ep(dm_file):
-    print("insert logic to determine if EP or SP file here")
-    file_type = 'extended_precision'
-    if file_type=='single_precision':
-        print('warning, single precison reader DNE')
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
     else:
-        print("reading Extended precision header")
-    return file_type
-
-
-def determine_number_of_pages_in_header(dm_file):
-    print("warning, we dont have a method for counting pages in header vs rest of file")
-    print("insert method here for doing this")
-    return 2
-
-def determine_number_of_records_per_page(df_file):
-    """
-    we are given the number of records on the last page, but
-    I see no guarantee that the last page is complete.  So we should
-    read the last page, and the one before it and make sure they
-    both have the same number of records before assuming the
-    number of records on the last page is true for all
-    """
-    print("read last page and second last page and compare # records")
-    return 7
-
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 def my_function():

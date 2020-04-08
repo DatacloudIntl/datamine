@@ -34,9 +34,7 @@ import pandas as pd
 import pdb
 import struct
 
-from binary_helpers import determine_number_of_pages_in_header
-from binary_helpers import determine_if_file_sp_or_ep
-from binary_helpers import merge_binary_strings
+#from binary_helpers import merge_binary_strings
 #from binary_helpers import skip_bytes
 from binary_helpers import read_int_from_8byte_float
 from binary_helpers import read_staggered_string
@@ -118,7 +116,6 @@ class DatamineFile(object):
             self._bytes_per_header_field = 56
             self._static_bytes_page_1 = 224
             self._bytes_per_word = 8
-            print("reading Extended precision header")
         return
 
     @property
@@ -231,11 +228,12 @@ class DatamineFile(object):
             output[i] = field
         return output
 
-    def read_header(self):
-        print("Reading {}".format(self.dm_file_path))
+    def read_header(self, verbose=True):
+        if verbose:
+            print("Reading {}".format(self.dm_file_path))
         self.determine_precision()
         if self.precision=='extended':
-            self.read_extended_precison_header()
+            self.read_extended_precison_header(verbose=verbose)
         elif self.precision=='single':
             print("No single precision header reader exists yet")
             raise Exception
@@ -257,14 +255,7 @@ class DatamineFile(object):
         n_last_page = read_int_from_8byte_float(f)
         n_last_record = read_int_from_8byte_float(f)
         f.close()
-        if verbose:
-            print('1. fname={}'.format(fname))
-            print('2. dbname={}'.format(dbname))
-            print('3. description={}'.format(description))
-            print("4. date={}".format(date))
-            print('5. nfields={}'.format(n_fields))
-            print('6. nlast page={}'.format(n_last_page))
-            print('7. nlast record={}'.format(n_last_record))
+
         self.embedded_filename = fname
         self.dbname = dbname
         self.description = description
@@ -272,6 +263,16 @@ class DatamineFile(object):
         self.number_of_fields = int(n_fields)
         self.n_last_page = int(n_last_page)
         self.n_last_record = int(n_last_record)
+
+        if verbose:
+            print('1. fname={}'.format(fname))
+            print('2. dbname={}'.format(dbname))
+            print('3. description={}'.format(description))
+            print("4. date={}".format(date))
+            print('5. nfields={}'.format(n_fields))
+            print('6. nlast page={}'.format(n_last_page))
+            print('7. nlast record={}\n'.format(n_last_record))
+            print("header has {} pages\n".format(self.num_pages_header))
         return
 
     def check_for_foolishness(self):
@@ -294,18 +295,12 @@ class DatamineFile(object):
         proportionally.
         """
         field_names = [x.name for x in self.tabular_fields]
-        #pdb.set_trace()
         tmp_dict = {}
         tmp_dict['field_names'] = field_names
         df = pd.DataFrame(data=tmp_dict)
         value_counts = df['field_names'].value_counts()
-        #offending_labels = value_counts[value_counts>1]
-        #if len(offending_labels)==0:
-        #    self._merged_tabular_fields = self.tabular_fields
-        #else:
-        #add max_words to data_field
+
         for field in self.tabular_fields:
-            print(field.name,'s')
             field.max_words = value_counts[field.name]
         #drop multiple occurences by comparing name with the name before it?
         merged_tabular_fields = [self.data_fields[0],]
@@ -320,7 +315,6 @@ class DatamineFile(object):
         """
         """
         self.read_ep_header_sans_fields(verbose=verbose)
-        print("header has {} pages".format(self.num_pages_header))
         fields = []
         for i_page in range(self.num_pages_header):
             if i_page==0:
@@ -434,10 +428,17 @@ class DatamineFile(object):
         f.close()
         return data_dict
 
-    def read_file(self, num_pages=None):
+    def read_file(self, num_pages=None, verbose=True):
         """
         """
-        self.read_header()
+        #<read header if not already done>
+        #this could be cleaner with a self._header_read_complete attr
+        if self.data_fields is None:
+            self.read_header(verbose=True)
+        else:
+            pass
+        #</read header if not already done>
+
         n_rows_big = self.num_data_records
         book_dict = self.initialize_data_dict_for_readin(n_rows_big)
         last_page = False
@@ -460,13 +461,29 @@ class DatamineFile(object):
         self.data_dict = book_dict
         return
 
+    @property
+    def default_output_header_filename(self):
+        filename = self.dm_file_path.replace('.dm', '_header.csv')
+        return filename
+
+    @property
+    def default_output_data_filename(self):
+        filename = self.dm_file_path.replace('.dm', '_data.csv')
+        return filename
+
     def save_header(self, filename=None):
+        if filename is None:
+            filename = self.default_output_header_filename
         df = self.cast_fields_to_df()
-        df.to_csv(self.dm_file_path.replace('.dm', '_header.csv'))
+        print("Saving header info to: {}".format(filename))
+        df.to_csv(filename)
 
     def save_data(self, filename=None):
+        if filename is None:
+            filename = self.default_output_data_filename
         df = self.cast_data_to_df()
-        df.to_csv(self.dm_file_path.replace('.dm', '_data.csv'))
+        print("Saving data info to: {}".format(filename))
+        df.to_csv(filename)
 
 def read_header(dm_file, file_type='extended_precision'):
     """

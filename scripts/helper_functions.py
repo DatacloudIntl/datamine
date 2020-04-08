@@ -21,8 +21,6 @@ import pdb
 import struct
 #import chardet
 #from collections import defaultdict
-from binary_helpers import determine_number_of_pages_in_header
-from binary_helpers import skip_pages
 
 #can get this programatically now;
 HEADER_FIELDS_NOT_IN_TABLE = ['XMORIG', 'YMORIG', 'ZMORIG', 'NX', 'NY', 'NZ']
