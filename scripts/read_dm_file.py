@@ -51,8 +51,6 @@ def main(args):
     Example usages:
         python dm_read.py -if='cpybopt.dm'
 
-    If you want to just see the header, simply run in verbose mode (-v=True is default)
-        python dm_read.py -if='cpybopt.dm'
     If you want to send the header fields to a csv file:
         python dm_read.py -if='cpybopt.dm' --save_header=True
         will save the header to cpybopt_header.csv
@@ -113,25 +111,41 @@ def main(args):
 
 
 if __name__ == "__main__":
-    argparser = argparse.ArgumentParser(description="DM (Datamine) file interface -  Copyright (c) 2020 DataCloud")
+    example_text = """example:
 
-    argparser.add_argument('input_file', help="path to the dm file to process")
+        To print dmfile header to terminal:
+            python read_dm_file.py cpybopt.dm
 
-    argparser.add_argument('-v', '--verbose', help="dump header info to terminal", default=True)
+        To save header to default csv file:
+            python dm_read.py cpybopt.dm --save_header=True
+                saves header to cpybopt_header.csv
+            python dm_read.py cpybopt.dm --header_file=foo.csv
+                saves header to foo.csv
+
+        To save data to default csv file:
+            python dm_read.py cpybopt.dm --save_data=True
+                saves header to cpybopt_data.csv
+            python dm_read.py cpybopt.dm --output_file=foo.csv
+                or
+            python dm_read.py cpybopt.dm -of=foo.csv
+                will save the data to foo.csv
+
+        by specifying an output data_file header_file the save_data, save_header
+        arguments are interpretted as True
+        """
+    description_string = "DM (Datamine) file interface -  Copyright (c) 2020 DataCloud"
+    argparser = argparse.ArgumentParser(description=description_string,
+                                        epilog=example_text,
+                                        formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    argparser.add_argument('input_file', help="path to the dm file")
+
+    argparser.add_argument('-v', '--verbose', help="print header info to terminal", default=True)
     argparser.add_argument('-of', '--output_file', help="path to the output csv file",
                            default=None)
     argparser.add_argument('--save_header', help="save header fields as a csv", default=True)
     argparser.add_argument('--header_filename', help="filename for header data", default=None)
     argparser.add_argument('--save_data', help="save tabular data as a csv", default=False)
-#    argparser.add_argument('-raw', '--raw', help="Plot raw data instead of interpolated data",  default=False)
-#    argparser.add_argument('-save_raw', '--save_raw', help="Save raw data csv", default=False)
-#    argparser.add_argument('-save_csv', '--save_csv', help="Save interpolated data csv",  default=True)
-#    argparser.add_argument('-save_numpy', '--save_numpy', help="Save numpy arrays",  default=False)
-#    argparser.add_argument('-debug', '--debug', help="Run in debug mode",  default=False)
-#    argparser.add_argument('-spectrum', '--spectrum', help="Generate Spectrum Plot",  default=True)
-#    argparser.add_argument('-to', '--time_offset', help="Time offset for time axis", default=0)
-#    argparser.add_argument('-repeat', '--repeat_file', help='Path to the repeat file', default=None)
-#    argparser.add_argument('-filter', '--filter', help="Bandpass filter to be applied to the raw data", default=None)
 
     args = argparser.parse_args()
 
