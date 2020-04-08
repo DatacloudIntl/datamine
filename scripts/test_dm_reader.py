@@ -30,8 +30,8 @@ HOME = os.path.expanduser("~/")
 mine_dir = os.path.join(HOME, '.cache/datacloud/first_quantum_minerals/cobre_panama')
 SAVE_CSV = False
 MASS_TEST = True
-TEST = 'block_model'
-#TEST = 'PYTR'
+#TEST = 'block_model'
+TEST = 'PYTR'
 def set_paths():
 
 #<SET PATHS>
@@ -58,10 +58,10 @@ def test_file_io(dm_file_path):
     datamine_file_object = DatamineFile(dm_file_path=dm_file_path)#read_dm_file(dm_file)#, num_pages=2)
     datamine_file_object.read_file()
     datamine_file_object.save_header()
-    datamine_file_object.save_data()
+    #datamine_file_object.save_data(filetype='npy')
 
-#dm_file_path = set_paths()
-#test_file_io(dm_file_path)
+dm_file_path = set_paths()
+test_file_io(dm_file_path)
 
 def mass_test():
     """

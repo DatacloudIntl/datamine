@@ -303,7 +303,7 @@ class DatamineFile(object):
         for field in self.tabular_fields:
             field.max_words = value_counts[field.name]
         #drop multiple occurences by comparing name with the name before it?
-        merged_tabular_fields = [self.data_fields[0],]
+        merged_tabular_fields = [self.tabular_fields[0],]
         for i in range(len(self.tabular_fields)-1):
             if self.data_fields[i+1].name != self.data_fields[i].name:
                 merged_tabular_fields.append(self.data_fields[i+1])
@@ -478,12 +478,16 @@ class DatamineFile(object):
         print("Saving header info to: {}".format(filename))
         df.to_csv(filename)
 
-    def save_data(self, filename=None):
+    def save_data(self, filename=None, filetype='csv'):
         if filename is None:
             filename = self.default_output_data_filename
         df = self.cast_data_to_df()
         print("Saving data info to: {}".format(filename))
-        df.to_csv(filename)
+        if filetype=='csv':
+            df.to_csv(filename)
+        #elif filetype=='npy':
+        #    pdb.set_trace()
+        #    print('ss')
 
 def read_header(dm_file, file_type='extended_precision'):
     """
