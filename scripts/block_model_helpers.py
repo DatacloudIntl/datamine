@@ -80,5 +80,8 @@ df = df.sort_values(['Y_UTMZ4N_m', 'X_UTMZ4N_m', 'Z_m'])
 df['ID'] = np.arange(len(griddf))
 print(df.shape)
 print(df.head)
+#pdb.set_trace()
+df = df.drop(columns=['XC', 'YC', 'ZC', 'XINC', 'YINC', 'ZINC', 'DIST' ])
+#pdb.set_trace()
 df.to_csv('Ians_dataframe.csv') #Feel free to rename this!
 print('You are done!', datetime.datetime.now())

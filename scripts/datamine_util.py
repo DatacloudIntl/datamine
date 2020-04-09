@@ -299,11 +299,9 @@ class DatamineFile(object):
         tmp_dict['field_names'] = tabular_field_names
         df = pd.DataFrame(data=tmp_dict)
         value_counts = df['field_names'].value_counts()
-        pdb.set_trace()
         for field in self.tabular_fields:
             field.max_words = value_counts[field.name]
         #drop multiple occurences by comparing name with the name before it?
-        pdb.set_trace()
         merged_tabular_fields = [self.tabular_fields[0],]
         for i in range(len(self.tabular_fields)-1):
             if self.tabular_fields[i+1].name != self.tabular_fields[i].name:
