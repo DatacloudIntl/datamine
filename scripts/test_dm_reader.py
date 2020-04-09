@@ -56,9 +56,9 @@ def read_header(dm_file_path):
 
 def test_file_io(dm_file_path):
     datamine_file_object = DatamineFile(dm_file_path=dm_file_path)#read_dm_file(dm_file)#, num_pages=2)
-    datamine_file_object.read_file()
+    datamine_file_object.read_file()#num_pages=5
     datamine_file_object.save_header()
-    datamine_file_object.save_data(filetype='hdf')
+    datamine_file_object.save_data(data_format='hdf')
 
 dm_file_path = set_paths()
 read_header(dm_file_path)

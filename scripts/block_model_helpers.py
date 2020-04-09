@@ -47,7 +47,7 @@ xyz_increments = np.array([XINC, YINC, ZINC])
 #xyz_increments = np.array([60, 60, 30])
 origin = np.array([XMORIG, YMORIG, ZMORIG]) + xyz_increments/2.0
 #origin = np.array([(530735+30), (973690+30), (-795+15)])
-pdb.set_trace()
+#pdb.set_trace()
 grid = origin + gridsteps * xyz_increments
 griddf = pd.DataFrame(data=grid, columns = ['X_UTMZ4N_m', 'Y_UTMZ4N_m', 'Z_m'])
 griddf['IJK'] = np.arange(len(griddf))
