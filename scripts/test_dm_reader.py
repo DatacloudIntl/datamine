@@ -30,8 +30,8 @@ HOME = os.path.expanduser("~/")
 mine_dir = os.path.join(HOME, '.cache/datacloud/first_quantum_minerals/cobre_panama')
 SAVE_CSV = False
 MASS_TEST = True
-#TEST = 'block_model'
-TEST = 'PYTR'
+TEST = 'block_model'
+#TEST = 'PYTR'
 def set_paths():
 
 #<SET PATHS>
@@ -58,9 +58,10 @@ def test_file_io(dm_file_path):
     datamine_file_object = DatamineFile(dm_file_path=dm_file_path)#read_dm_file(dm_file)#, num_pages=2)
     datamine_file_object.read_file()
     datamine_file_object.save_header()
-    #datamine_file_object.save_data(filetype='npy')
+    datamine_file_object.save_data(filetype='hdf')
 
 dm_file_path = set_paths()
+read_header(dm_file_path)
 test_file_io(dm_file_path)
 
 def mass_test():
@@ -71,8 +72,9 @@ def mass_test():
     #dm_file = os.path.join(data_dir, 'ANDpt.dm')
     dm_files = os.listdir(data_dir)
     for dm_base in dm_files:
-        dm_file_path = os.path.join(data_dir, dm_base)
-        test_file_io(dm_file_path)
+        if dm_base[-3:]=='.dm':
+            dm_file_path = os.path.join(data_dir, dm_base)
+            test_file_io(dm_file_path)
     return
 
 #def create_df_from_npy_array_book(dm_file):

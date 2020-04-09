@@ -365,7 +365,7 @@ class DatamineFile(object):
         types = [x.type for x in fields]
 
         data_dict = {}
-        data_dict['default_values'] = default_values
+        data_dict['default_value'] = default_values
         data_dict['field_name'] = field_names
         data_dict['stored_word'] = stored_words
         data_dict['word_number'] = word_numbers
@@ -478,13 +478,18 @@ class DatamineFile(object):
         print("Saving header info to: {}".format(filename))
         df.to_csv(filename)
 
-    def save_data(self, filename=None, filetype='csv'):
+    def save_data(self, filename=None, data_format='csv'):
         if filename is None:
             filename = self.default_output_data_filename
         df = self.cast_data_to_df()
-        print("Saving data info to: {}".format(filename))
-        if filetype=='csv':
+        print(data_format, filename)
+        if data_format=='csv':
+            print("Saving data info to: {}".format(filename))
             df.to_csv(filename)
+        elif data_format=='h5':
+            filename = filename.replace('.csv', '.h5')
+            print("Saving data info to: {}".format(filename))
+            df.to_hdf(filename, key='df', mode='w')
         #elif filetype=='npy':
         #    pdb.set_trace()
         #    print('ss')

@@ -64,6 +64,7 @@ def main(args):
     save_header = str2bool(args.save_header)
     header_filename = args.header_filename
     save_data = str2bool(args.save_data)
+    data_format = args.data_format
     out_file_path = args.output_file
     verbose = str2bool(args.verbose)
     dm_file_path = args.input_file
@@ -92,6 +93,8 @@ def main(args):
     if save_data:
         if out_file_path is None:
             out_file_path = dm_obj.default_output_data_filename
+            if data_format != 'csv':
+                out_file_path = out_file_path.replace('.csv', '.{}'.format(data_format))
             print("No Output Data File Specified, Writing to {}".format(out_file_path))
     #</Set output filenames to default or given values>
 
@@ -106,7 +109,7 @@ def main(args):
 
     if save_data:
         dm_obj.read_file(verbose=False)
-        dm_obj.save_data(filename=out_file_path)
+        dm_obj.save_data(filename=out_file_path, data_format=data_format)
     print("finito {}".format(datetime.datetime.now()))
 
 
@@ -145,7 +148,8 @@ if __name__ == "__main__":
                            default=None)
     argparser.add_argument('--save_header', help="save header fields as a csv", default=True)
     argparser.add_argument('--header_filename', help="filename for header data", default=None)
-    argparser.add_argument('--save_data', help="save tabular data as a csv", default=False)
+    argparser.add_argument('--save_data', help="save tabular data", default=False)
+    argparser.add_argument('--data_format', help="format for tabular data {csv, h5}", default='csv')
 
     args = argparser.parse_args()
 
