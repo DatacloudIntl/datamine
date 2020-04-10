@@ -20,7 +20,6 @@ block_model_helpers.py: Prototype for emulating geoscience analyst, reducing man
 cpybopt.dm: an example input for testing
 datamine_util.py: the core class for dm reader is here
 header_fields.py : class and method for unpacking the metadata about the various fields in the dm files.
-helper_functions.py: misc helpers, probably can be deprecated soon
 read_dm_file.py: The command line interface lives here
 readme: you are reading this now
 test_dm_reader.py: sandbox for testing
