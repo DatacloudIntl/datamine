@@ -3,4 +3,36 @@ python read_dm_file.py cpybopt.dm -of=foo.csv
 
 You should wind up with a foo.csv dump of the dm file.
 
-test git jira compatibility
+The methods here provide the functionality to dump dm files to dataframes, and then to either
+h5 or csv format.  
+
+
+Additionaly, a prototype script to emulate the "snap-to-nearest-grid-cell"
+method of geoscience analyst has been implemented.  This has not been generalized yet as we 
+have only one example.  The example, referenced in some tests is a file called borcddmod150220.dm.  
+This file is not included in the repo, as it is ~1GB in size.
+It can be found in sharepoint at
+https://datacloudinternational.sharepoint.com/:f:/r/sites/ClientProjects/Shared%20Documents/FQM-CobrePanama/1_OriginalClientData/Botjija%20Geo%20Stuff/Model?csf=1&web=1&e=xxMhAX
+
+
+binary_helpers.py: These are mostly routines for unpacking binary in the dm files.  
+block_model_helpers.py: Prototype for emulating geoscience analyst, reducing many-points-per-cell to a standard block model 
+cpybopt.dm: an example input for testing
+datamine_util.py: the core class for dm reader is here
+header_fields.py : class and method for unpacking the metadata about the various fields in the dm files.
+helper_functions.py: misc helpers, probably can be deprecated soon
+read_dm_file.py: The command line interface lives here
+readme: you are reading this now
+test_dm_reader.py: sandbox for testing
+
+If you are digging into the code and get confused about:
+data_fields
+constant_fields
+tabular_fields
+merged_tabular_fields
+The thing to know is that data_fields are all of them.  Constant are fields not in the table, basically a way to pass parameters
+in the dm file header.  Tabular fields are the columns of the actual data portion of the file.  
+merged_tabular_fields are a special case where, say you have a string field "mr_mc_field" that needs for example 24 characters.
+But, the "words" that the data are packed in are only 8 characters.  So what happens is that the same field.name is repeated
+several times ... so we need to exercise caution with having dictionaried keyed by field.name or we will overwrite word 1 with word 2, and word2 with word3 and so on.  
+

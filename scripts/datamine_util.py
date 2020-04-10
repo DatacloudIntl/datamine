@@ -34,12 +34,9 @@ import pandas as pd
 import pdb
 import struct
 
-#from binary_helpers import merge_binary_strings
-#from binary_helpers import skip_bytes
 from binary_helpers import read_int_from_8byte_float
 from binary_helpers import read_staggered_string
 from header_fields import field_reader_ep
-from helper_functions import fix_non_unique_field_names
 
 class DatamineFile(object):
     def __init__(self, dm_file_path=None, precision=None):
@@ -293,6 +290,9 @@ class DatamineFile(object):
         This method generates a _merged_tabular_fields, which is tabular
         fields with duplicates removed, and max_word attribute increased
         proportionally.
+
+        ToDo: The nuts and bolts of this method may be better off stored in
+        the header_fields.py module rather than here.
         """
         tabular_field_names = [x.name for x in self.tabular_fields]
         tmp_dict = {}
