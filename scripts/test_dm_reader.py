@@ -23,7 +23,6 @@ import pandas as pd
 import pdb
 
 #from datamine_util import read_header
-from datamine_util import read_dm_file
 from datamine_util import DatamineFile
 
 HOME = os.path.expanduser("~/")
@@ -55,15 +54,15 @@ def read_header(dm_file_path):
     datamine_file_object.read_header()
 
 def test_file_io(dm_file_path):
-    datamine_file_object = DatamineFile(dm_file_path=dm_file_path)#read_dm_file(dm_file)#, num_pages=2)
+    datamine_file_object = DatamineFile(dm_file_path=dm_file_path)
     datamine_file_object.read_file()#num_pages=5
     datamine_file_object.save_header()
-    datamine_file_object.save_data(data_format='hdf')
+    datamine_file_object.save_data(data_format='h5')
 
 dm_file_path = set_paths()
 read_header(dm_file_path)
 test_file_io(dm_file_path)
-
+#pdb.set_trace()
 def mass_test():
     """
     """

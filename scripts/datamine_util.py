@@ -6,20 +6,30 @@ Created on Wed Apr  1 11:40:17 2020
 @author: kkappler
 
         There are a maximum of 68 data fields on page 1 (56Bytes per field),
-        after 224 byte preamble.  THere are 32 empty bytes hanging out after the
+        after 224 byte preamble.  There are 32 empty bytes hanging out after the
         68th field before you get to the last 32 bytes of header page
         which are security information, no longer used
 
         Need to know:
-            1. NUmber of pages in header
-            2. NUmber of fields per header page
+            1. Number of pages in header
+            2. Number of fields per header page
 
         The method to read the "non-field metadata" is basically a parser on the first
         224 bytes.
         The field metadata are obtained on page 1 by skipping 224 bytes, and then
-        reading chunks of 56.
-        the metadata on pages 2 and beyond are obtained by skipping to the page, and
+        reading chunks of 56-bytes.
+        The metadata on pages 2 and beyond are obtained by skipping to the page, and
         reading 56-byte chunks
+
+        Some standards that have been observed more than once:
+        XC
+        YC
+        ZC
+        These are cell centers
+
+ToDo: add method to return coordinates (XC, YC, ZC)
+Careful!! Rotating cell centers, but leaving {X,Y,Z}INC is not actually
+quite right for change of csys... or is it?. ... TAI
 
 """
 
@@ -53,6 +63,7 @@ class DatamineFile(object):
         """
         self.dm_file_path = dm_file_path
         self.data_dict = None
+        self._data_df = None
 
         #<Header>
         self.embedded_filename = None #H
@@ -81,6 +92,8 @@ class DatamineFile(object):
         self._bytes_per_word = None
         self.words_per_column = None #list to handle multi-word fields
         #</Derived>
+
+
 
     def determine_precision(self):
         """
@@ -137,7 +150,7 @@ class DatamineFile(object):
         returns a list of number of fields on each page of header
         e.g. [68, 7]
         68 and 72 are baked in numbers of the format.
-        68 fields max on page 1, and 72 on every header page thereafter
+        68 fields max on page 1, and 72 max on every header page thereafter
         """
         if self._num_fields_per_page is None:
             fields_per_page = []
@@ -374,7 +387,17 @@ class DatamineFile(object):
 
     def cast_data_to_df(self):
         df = pd.DataFrame(data=self.data_dict)
+        self._data_df = df
         return df
+
+    @property
+    def data_df(self):
+        #pdb.set_trace()
+        if self._data_df is None:
+            self.cast_data_to_df()
+        else:
+            pass
+        return self._data_df
 
     def initialize_data_dict_for_readin(self, n_rows):
         """
@@ -427,7 +450,7 @@ class DatamineFile(object):
         f.close()
         return data_dict
 
-    def read_file(self, num_pages=None, verbose=True):
+    def read_file(self, num_pages=None, verbose=True, pages_per_message=100):
         """
         """
         #<read header if not already done>
@@ -443,8 +466,9 @@ class DatamineFile(object):
         last_page = False
         if num_pages is None:
             num_pages = self.num_pages_data
+        #pdb.set_trace()
         for i_page in range(num_pages):
-            if np.mod(i_page, 100)==0:
+            if np.mod(i_page, pages_per_message)==0:
                 print('reading page {} of {}'.format(i_page, num_pages))
             page_num = i_page + self.num_pages_header
             n_rows = self.num_rows_per_data_page
@@ -480,7 +504,7 @@ class DatamineFile(object):
     def save_data(self, filename=None, data_format='csv'):
         if filename is None:
             filename = self.default_output_data_filename
-        df = self.cast_data_to_df()
+        df = self.data_df
         print(data_format, filename)
         if data_format=='csv':
             print("Saving data info to: {}".format(filename))
@@ -492,6 +516,25 @@ class DatamineFile(object):
         #elif filetype=='npy':
         #    pdb.set_trace()
         #    print('ss')
+
+    @property
+    def cell_coordinates(self):
+        df = self.data_df
+        cell_coords = df[['XC', 'YC', 'ZC']]
+        return cell_coords
+
+    def rotate_coordinates(self, rotation_matrix, write_to_df=True):
+        coords_df = self.cell_coordinates
+        coords_array = np.asarray(coords_df).T
+        rotated_coords = np.dot(rotation_matrix, coords_array)
+        rotated_coords = rotated_coords.T
+        #pdb.set_trace()
+        print('overwrite xc, yc, zc')
+        self._data_df['XC'] = rotated_coords[:,0]
+        self._data_df['YC'] = rotated_coords[:,1]
+        self._data_df['ZC'] = rotated_coords[:,2]
+        return coords_array
+
 
 def read_header(dm_file, file_type='extended_precision'):
     """
