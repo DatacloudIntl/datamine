@@ -28,6 +28,9 @@ Created on Wed Apr  1 11:40:17 2020
         These are cell centers
 
 ToDo: add method to return coordinates (XC, YC, ZC)
+..:ToDo: Add methods to return all Header constant values that have
+standardized names:
+    XYZMORIG, XYZ0, ANGLE123, ROTAXIS123,
 Careful!! Rotating cell centers, but leaving {X,Y,Z}INC is not actually
 quite right for change of csys... or is it?. ... TAI
 
@@ -530,10 +533,18 @@ class DatamineFile(object):
         rotated_coords = rotated_coords.T
         #pdb.set_trace()
         print('overwrite xc, yc, zc')
-        self._data_df['XC'] = rotated_coords[:,0]
-        self._data_df['YC'] = rotated_coords[:,1]
-        self._data_df['ZC'] = rotated_coords[:,2]
+        if write_to_df:
+            self._data_df['XC'] = rotated_coords[:,0]
+            self._data_df['YC'] = rotated_coords[:,1]
+            self._data_df['ZC'] = rotated_coords[:,2]
         return coords_array
+
+    def shift_coordinates(self, shift_vector):#, write_to_df=True):
+        print('overwrite xc, yc, zc')
+        self._data_df['XC'] += shift_vector[0]
+        self._data_df['YC'] += shift_vector[1]
+        self._data_df['ZC'] += shift_vector[2]
+        return
 
 
 def read_header(dm_file, file_type='extended_precision'):
