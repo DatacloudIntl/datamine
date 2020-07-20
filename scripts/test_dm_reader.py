@@ -22,8 +22,7 @@ import os
 import pandas as pd
 import pdb
 
-#from datamine_util import read_header
-from datamine_util import DatamineFile
+from datamine_file import DatamineFile
 
 HOME = os.path.expanduser("~/")
 mine_dir = os.path.join(HOME, '.cache/datacloud/first_quantum_minerals/cobre_panama')

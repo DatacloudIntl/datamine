@@ -62,7 +62,7 @@ from scipy.spatial.transform import Rotation
 #from dc_mwd.mine_data_cache_paths import MineDataCachePaths
 #from dc_mwd.logging_util import init_logging
 
-from datamine_util import DatamineFile
+from datamine_file import DatamineFile
 
 #logger = init_logging(__name__)
 HOME = os.path.expanduser("~/")
@@ -70,6 +70,16 @@ HOME = os.path.expanduser("~/")
 data_folder = os.path.join(HOME, '.cache', 'datacloud', 'trevali', 'rosh_pinah')
 dm_file_path = os.path.join(data_folder, 'rp_bm_final_wf3.dm')
 h5_file_path = os.path.join(data_folder, 'rp_bm_final_wf3_data.h5')
+
+
+def snap_to_5x5x5(df):
+    """
+    start with a list of all IJK.
+    Then initialize a dataframe with those IJK.
+    """
+    all_ijk = df.IJK.unique()
+
+    pass
 
 def greet_the_datamine_file():
     """
@@ -82,6 +92,7 @@ def greet_the_datamine_file():
     #note to Ian: Added datamine_file_object._data_df
     """
     #<TO BE MADE INPUT VARS>
+    assign_closest_value_to_cell = True
     num_pages = None
     SAVE_ORIGINAL_TO_CSV = False
     SAVE_ORIGINAL_TO_H5 = False
@@ -115,14 +126,16 @@ def greet_the_datamine_file():
 
     print('Rotating coordinates')
     rotated_coords_array = datamine_file_object.rotate_coordinates(r_x, write_to_df=False)
+    print('Adding geographic (Mine) Coordinates')
+    datamine_file_object._data_df['easting'] = rotated_coords_array[:,0] + X0
+    datamine_file_object._data_df['northing'] = rotated_coords_array[:,1] + Y0
+    datamine_file_object._data_df['elevation'] = rotated_coords_array[:,2] + Z0
+
 
     if SAVE_5X5X5_TO_CSV:
         df = datamine_file_object.data_df
-        print('adding geographic coordinates')
-        df['easting'] = rotated_coords_array[:,0] + X0
-        df['northing'] = rotated_coords_array[:,1] + Y0
-        df['elevation'] = rotated_coords_array[:,2] + Z0
-
+        pdb.set_trace()
+        print('here check if easting, northing, elev are present')
         print('Saving 5x5x5')
         df5x5x5 = df[df.VOL==125]
         outfile = datamine_file_object.default_output_data_filename

@@ -23,7 +23,7 @@ import datetime
 import pdb
 
 from binary_helpers import str2bool
-from datamine_util import DatamineFile
+from datamine_file import DatamineFile
 
 def read_header(dm_file_path):
     datamine_file_object = DatamineFile(dm_file_path=dm_file_path)
