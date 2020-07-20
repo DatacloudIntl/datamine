@@ -85,7 +85,7 @@ def greet_the_datamine_file():
     num_pages = None
     SAVE_ORIGINAL_TO_CSV = False
     SAVE_ORIGINAL_TO_H5 = False
-    SAVE_5X5X5_TO_CSV = False
+    SAVE_5X5X5_TO_CSV = True
     #</TO BE MADE INPUT VARS>
     datamine_file_object = DatamineFile(dm_file_path=dm_file_path)
     X0 = 22074.0
@@ -114,29 +114,28 @@ def greet_the_datamine_file():
 
 
     print('Rotating coordinates')
-    rotated_coords_array = datamine_file_object.rotate_coordinates(r_x)
-
-    print('adding geographic coordinates')
-    df = datamine_file_object._data_df
-    df['easting'] = rotated_coords_array[0,:] + X0
-    df['northing'] = rotated_coords_array[1,:] + Y0
-    df['elevation'] = rotated_coords_array[2,:] + Z0
+    rotated_coords_array = datamine_file_object.rotate_coordinates(r_x, write_to_df=False)
 
     if SAVE_5X5X5_TO_CSV:
-        print('Saving 5x5x5')
         df = datamine_file_object.data_df
+        print('adding geographic coordinates')
+        df['easting'] = rotated_coords_array[:,0] + X0
+        df['northing'] = rotated_coords_array[:,1] + Y0
+        df['elevation'] = rotated_coords_array[:,2] + Z0
+
+        print('Saving 5x5x5')
         df5x5x5 = df[df.VOL==125]
         outfile = datamine_file_object.default_output_data_filename
         outfile = outfile.replace('.csv', '_with_mine_coordinates_5x5x5.csv')
         df5x5x5 .to_csv(outfile)
 
-    plt.plot(df5x5x5.XC, df5x5x5.YC, 'rx', label='estimation_grid')
-    plt.plot(df5x5x5.easting-X0, df5x5x5.northing-Y0, 'bo', label='mine coordinates')
-    plt.xlim([-100, 2000])
-    plt.xlabel("Translated Easting")
-    plt.ylabel("Translated Northing")
-    plt.plot(0,0,'g+', markersize=25, markeredgewidth=5, label='origin')
-    plt.legend();plt.show()
+        plt.plot(df5x5x5.XC, df5x5x5.YC, 'rx', label='estimation_grid')
+        plt.plot(df5x5x5.easting-X0, df5x5x5.northing-Y0, 'bo', label='mine coordinates')
+        plt.xlim([-100, 2000])
+        plt.xlabel("Translated Easting")
+        plt.ylabel("Translated Northing")
+        plt.plot(0,0,'g+', markersize=25, markeredgewidth=5, label='origin')
+        plt.legend();plt.show()
 
     pdb.set_trace()
     print('done20200717')

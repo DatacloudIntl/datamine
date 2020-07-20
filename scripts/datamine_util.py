@@ -537,7 +537,7 @@ class DatamineFile(object):
             self._data_df['XC'] = rotated_coords[:,0]
             self._data_df['YC'] = rotated_coords[:,1]
             self._data_df['ZC'] = rotated_coords[:,2]
-        return coords_array
+        return rotated_coords
 
     def shift_coordinates(self, shift_vector):#, write_to_df=True):
         print('overwrite xc, yc, zc')
