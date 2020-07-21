@@ -63,6 +63,7 @@ from scipy.spatial.transform import Rotation
 #from dc_mwd.logging_util import init_logging
 
 from datamine_file import DatamineFile
+from datamine_util import make_grid_with_ijk
 
 #logger = init_logging(__name__)
 HOME = os.path.expanduser("~/")
@@ -72,14 +73,53 @@ dm_file_path = os.path.join(data_folder, 'rp_bm_final_wf3.dm')
 h5_file_path = os.path.join(data_folder, 'rp_bm_final_wf3_data.h5')
 
 
-def snap_to_5x5x5(df):
+def snap_to_5x5x5(datamine_file_object):
     """
     start with a list of all IJK.
     Then initialize a dataframe with those IJK.
     """
+    df = datamine_file_object.data_df
+    original_columns = df.columns
+    cfd = datamine_file_object.constant_fields_dict
+    tfd = datamine_file_object.tabular_fields_dict
+    #pdb.set_trace()
+    gijk = make_grid_with_ijk(cfd['NX'], cfd['NY'], cfd['NZ'], tfd['XINC'],
+                              tfd['YINC'], tfd['ZINC'], cfd['XMORIG'],
+                              cfd['YMORIG'], cfd['ZMORIG'])
+    df = df.merge(gijk, on=['IJK'])
+    df['DIST'] = ((df.XC - df.xc_ijk)**2 + (df.YC - df.yc_ijk)**2 + (df.ZC - df.zc_ijk)**2) **0.5
+    print("now make the grid regular")
+    df['XC'] = df['xc_ijk']
+    df['YC'] = df['yc_ijk']
+    df['ZC'] = df['zc_ijk']
+    #df['VOL'] = 125#df['zc_ijk']
     all_ijk = df.IJK.unique()
+    n_cells = len(all_ijk)
+    new_df_kernel = n_cells * [None]
+    for i, ijk in enumerate(all_ijk):
+        sub_df = df[df.IJK==ijk]
+        #print(len(sub_df))
+        if len(sub_df)==1:
+            if sub_df.VOL.iloc[0]==125:
+                new_df_kernel[i] = sub_df.iloc[0][original_columns].values
+            else:
+                print('only 1 cell and its not 5x5x5!!: {} {}'.format(i, int(ijk)))
+                #pdb.set_trace()
+                new_df_kernel[i] = sub_df.iloc[0][original_columns].values
+        else:
+            #pdb.set_trace()
+            #print('min')
+            #sub_df['XC']
+            new_df_kernel[i] = sub_df.loc[sub_df['DIST'].idxmin()][original_columns].values
+            #pdb.set_trace()
+            #qq = df.loc[df['DIST'].idxmin()]
+        #pdb.set_trace()
+    #pdb.set_trace()
+    ooot = pd.DataFrame(data=new_df_kernel, columns=original_columns)
+    ooot.VOL = 125
+    print('hot dawg')
+    return ooot
 
-    pass
 
 def greet_the_datamine_file():
     """
@@ -105,9 +145,9 @@ def greet_the_datamine_file():
     ANGLE1 = 55.0
     ROTAXIS1 = 3; rot_axis = 'xyz'[ROTAXIS1-1]
     r_x = Rotation.from_euler(rot_axis, -ANGLE1, degrees=True).as_dcm()
-#    datamine_file_object.read_file(num_pages=100, pages_per_message=1000)#num_pages=5
     print('Reading file')
     print('For quick Test / debug run set num_pages=100')
+    #datamine_file_object.read_file(num_pages=1000, pages_per_message=1000)#num_pages=5
     datamine_file_object.read_file(pages_per_message=1000, num_pages=num_pages)
 
     print('Saving Header')
@@ -123,7 +163,9 @@ def greet_the_datamine_file():
 #    datamine_file_object.save_data(filename=outfile, data_format='csv')
 
 
-
+    df5x5x5 = snap_to_5x5x5(datamine_file_object)
+    print(len(df5x5x5))
+    datamine_file_object._data_df = df5x5x5
     print('Rotating coordinates')
     rotated_coords_array = datamine_file_object.rotate_coordinates(r_x, write_to_df=False)
     print('Adding geographic (Mine) Coordinates')
@@ -133,14 +175,23 @@ def greet_the_datamine_file():
 
 
     if SAVE_5X5X5_TO_CSV:
-        df = datamine_file_object.data_df
-        pdb.set_trace()
+#        df = datamine_file_object.data_df
+#        original_columns = df.columns
+#        cfd = datamine_file_object.constant_fields_dict
+#        tfd = datamine_file_object.tabular_fields_dict
+#        pdb.set_trace()
+#        gijk = make_grid_with_ijk(cfd['NX'], cfd['NY'], cfd['NZ'], tfd['XINC'],
+#                                  tfd['YINC'], tfd['ZINC'], cfd['XMORIG'],
+#                                  cfd['YMORIG'], cfd['ZMORIG'])
+#        df = dm.merge(grid_df, on=['IJK'])
+#        NEW_DF_KERNEL = len(df)
+#        pdb.set_trace()
         print('here check if easting, northing, elev are present')
         print('Saving 5x5x5')
-        df5x5x5 = df[df.VOL==125]
+        #df5x5x5 = df[df.VOL==125]
         outfile = datamine_file_object.default_output_data_filename
-        outfile = outfile.replace('.csv', '_with_mine_coordinates_5x5x5.csv')
-        df5x5x5 .to_csv(outfile)
+        outfile = outfile.replace('.csv', '_with_mine_coordinates_5x5x5_full.csv')
+        df5x5x5.to_csv(outfile)
 
         plt.plot(df5x5x5.XC, df5x5x5.YC, 'rx', label='estimation_grid')
         plt.plot(df5x5x5.easting-X0, df5x5x5.northing-Y0, 'bo', label='mine coordinates')

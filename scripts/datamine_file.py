@@ -51,6 +51,7 @@ from binary_helpers import read_int_from_8byte_float
 from binary_helpers import read_staggered_string
 from header_fields import field_reader_ep
 
+
 class DatamineFile(object):
     def __init__(self, dm_file_path=None, precision=None):
         """
@@ -94,6 +95,10 @@ class DatamineFile(object):
         self._num_rows_per_data_page = None
         self._bytes_per_word = None
         self.words_per_column = None #list to handle multi-word fields
+
+        #added 20200720;
+        self.constant_fields_dict = None
+        self.tabular_fields_dict= None
         #</Derived>
 
 
@@ -184,16 +189,36 @@ class DatamineFile(object):
 
     @property
     def constant_fields(self):
+        """
+        Intention here is to fully unpack all info into
+        self.constant_fields, but its handy to just have a dictionary of
+        names:values, so I am supporting that as well, but its not very clean.
+        Probably better to use dict(zip()) on the dataframe returned
+        by self.cast_fields_to_df(field_type='constant')
+        """
         if self._constant_fields is None:
             constant_fields = [x for x in self.data_fields if x.stored_word==0]
             self._constant_fields = constant_fields
+        constant_fields_dict = {}
+        #pdb.set_trace()
+        for x in self._constant_fields:
+            constant_fields_dict[x.name] = x.default_value
+            self.constant_fields_dict = constant_fields_dict
+        #pdb.set_trace()
         return self._constant_fields
 
     @property
     def tabular_fields(self):
+        """
+        see note in constant_fields() about dict generator
+        """
         if self._tabular_fields is None:
             tabular_fields = [x for x in self.data_fields if x.stored_word!=0]
             self._tabular_fields = tabular_fields
+        tabular_fields_dict = {}
+        for x in self._tabular_fields:
+            tabular_fields_dict[x.name] = x.default_value
+            self.tabular_fields_dict = tabular_fields_dict
         return self._tabular_fields
 
     @property
